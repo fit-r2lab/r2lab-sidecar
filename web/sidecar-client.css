@@ -1,0 +1,37 @@
+div.allpage {
+    width: 100%;
+    margin: 5px;
+}
+div#url {
+    margin: 10px;
+}
+div#contents {
+    margin: 20px;
+}
+input.wider {
+    font-size: 14px;
+    width: 30em;
+    border: 0.5px;
+}
+span {
+    background: rgb(200,200,200);
+    padding: 2px;
+    margin: 4px;
+}
+span.header {
+    width: 25%;
+    margin: 10px;
+}
+ul {
+    margin-left: 20px;
+}
+ul.contents>li:nth-child(odd) {
+    background: #eee;
+}
+button.green {
+    background-color: green;
+    margin-left: 350px;
+}
+.red {
+    background-color: red;
+}

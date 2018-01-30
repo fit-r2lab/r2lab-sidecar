@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <title>sidecar client</title>
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <script src="http://code.jquery.com/jquery-2.1.4.js"></script>
+    <script src="sidecar-client.js"></script>
+    <link type="text/css" rel="stylesheet" href="sidecar-client.css"/>
+  </head>
+  <body>
+    <div class="allpage" id="url">
+    <span id="connection_status"></span> <br/><br/>
+    <span class="header">sidecar url</span>
+    <input class="wider" id="url"/>
+    <button id="devel" onclick="set_devel_url()">Use devel sidecar</button>
+    <button id="prod" onclick="set_prod_url()">Use production sidecar</button>
+    <button id="disconnect" onclick="pause()">Pause/Disconnect</button>
+    <button id="connect" onclick="set_url()">Apply/Reconnect</button>
+    <button id="clear" onclick="clear_all()">Clear</button>
+    <hr>
+    </div>
+
+    <div id='controls'></div>
+    <div id='contents'></div>
+  </body>
+</html>
