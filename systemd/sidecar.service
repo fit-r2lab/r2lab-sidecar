@@ -8,7 +8,7 @@ Description=Sidecar service propagates R2lab testbed status using socketio
 
 [Service]
 WorkingDirectory=/root/r2lab-sidecar
-ExecStartPre=mkdir -p /var/lib/sidecar
+ExecStartPre=/usr/bin/mkdir -p /var/lib/sidecar
 ExecStart=/bin/bash -c "node sidecar.js"
 # make it more robust
 Restart=always
