@@ -168,6 +168,7 @@ let populate = function() {
 	html += `<div class="contents" id="contents-${name}">`;
 	html += `<h3>Contents of ${name}</h3>`;
 	html += `<ul class="contents" id="ul-${name}"></ul>`;
+        html += `<hr/>`;
 	html += `</div>`;
 	$("#contents").append(html);
 	$(`div#send-${name}>input`).val(sections[name].def_send);
