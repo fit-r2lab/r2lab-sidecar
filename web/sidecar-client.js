@@ -4,17 +4,17 @@
 //let default_url = "http://r2lab.inria.fr:999/";
 let devel_url = "http://localhost:10000/";
 let prod_url = "https://r2lab.inria.fr:999/";
-let default_url = devel_url;
+let default_url = prod_url;
 
 let socket = undefined;
 
 let sections = {
-    phones: {depth: 2,  def_request: 'REQUEST',
-	     def_send: '[{"id":1, "airplane_mode":"on"}]',
-	     prettifier: pretty_records,
-	    },
     nodes : {depth: 10, def_request: 'REQUEST',
 	     def_send: '[{"id":1, "available":"ko"}]',
+	     prettifier: pretty_records,
+	    },
+    phones: {depth: 2,  def_request: 'REQUEST',
+	     def_send: '[{"id":1, "airplane_mode":"on"}]',
 	     prettifier: pretty_records,
 	    },
     leases: {depth: 2,  def_request: 'REQUEST',
@@ -162,6 +162,7 @@ let populate = function() {
 	html += `<span class="header">send raw (json) line as ${name}</span>`;
 	html += `<input class="wider" id="send-${name}" /><button class="red">Send json</button>`;
 	html += `</div>`;
+        html += `<hr/>`;
 	$("#controls").append(html);
 	html = "";
 	html += `<div class="contents" id="contents-${name}">`;
