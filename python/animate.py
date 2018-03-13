@@ -6,7 +6,8 @@ import time
 import datetime
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from sidecar_client import connect_url
+
+from r2lab import R2labSidecar
 
 # in seconds
 default_cycle = 1
@@ -155,37 +156,34 @@ def main():
 
     url = args.sidecar_url
     print("Connecting to sidecar at {}".format(url))
-    socketio = connect_url(url)
+    with R2labSidecar(url) as sidecar:
 
-    counter = 0
-    while True:
-        news_infos = [ random_node_status(id, index)
-                       for index, id in enumerate(random_ids(args.max_nodes_impacted)) ]
-        if args.verbose:
-            print("{} -- on {} nodes (id, len(fields)) : {}"
-                  .format(counter, len(news_infos),
-                          [ (info['id'], len(info)-1) for info in news_infos]))
-            print(news_infos[0])
-        socketio.emit('info:nodes', json.dumps(news_infos), None)
-
-        # only one phone
-        if counter % args.phone_cycle == 0:
-            phone_infos = [ random_phone_status(id) for id in [1]]
+        counter = 0
+        while True:
+            news_infos = [ random_node_status(id, index)
+                           for index, id in enumerate(random_ids(args.max_nodes_impacted)) ]
             if args.verbose:
-                print("phone: emitting {}".format(phone_infos[0]))
-            socketio.emit('info:phones', json.dumps(phone_infos), None)
+                print("{} -- on {} nodes (id, len(fields)) : {}"
+                      .format(counter, len(news_infos),
+                              [ (info['id'], len(info)-1) for info in news_infos]))
+                print(news_infos[0])
+            sidecar.emit('info:nodes', json.dumps(news_infos), None)
+    
+            # only one phone
+            if counter % args.phone_cycle == 0:
+                phone_infos = [ random_phone_status(id) for id in [1]]
+                if args.verbose:
+                    print("phone: emitting {}".format(phone_infos[0]))
+                sidecar.emit('info:phones', json.dumps(phone_infos), None)
+    
+            leases = get_leases()
+            if leases:
+                sidecar.emit('info:leases', json.dumps(leases), None)
+            counter += 1
+            if args.runs and counter >= args.runs:
+                break
+            time.sleep(cycle)
 
-        leases = get_leases()
-        if leases:
-            socketio.emit('info:leases', json.dumps(leases), None)
-        counter += 1
-        if args.runs and counter >= args.runs:
-            break
-        time.sleep(cycle)
-
-        
-    # xxx should probably clean up the socket io client
-    pass
 
 if __name__ == '__main__':
     main()
