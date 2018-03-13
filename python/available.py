@@ -14,7 +14,7 @@ to instruct it that some nodes are available or not
 import json
 from argparse import ArgumentParser
 
-from sidecar_client import connect_url
+from r2lab import R2labSidecar
 
 # globals
 channel = "info:nodes"
@@ -37,14 +37,14 @@ def check_valid(node):
     return 1 <= node <= 37
 
 invalid_nodes = [ node for node in args.nodes if not check_valid(node) ]
+
 if invalid_nodes:
     print("Invalid inputs {} - exiting".format(invalid_nodes))
     exit(1)
 
-infos = [{'id': node, 'available' : available_value} for node in args.nodes]
+triples = [ (node, 'available', available_value) for node in args.nodes ]
 
 url = args.sidecar_url
 print("Connecting to sidecar at {}".format(url))
-socketio = connect_url(url)
-print("Sending {infos} onto {url} on channel {channel}".format(**locals()))
-socketio.emit(channel, json.dumps(infos), None)
+with R2labSidecar(url) as sidecar:
+    sidecar.set_nodes_triples(*triples)
