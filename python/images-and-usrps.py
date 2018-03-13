@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+note = """
+
+WARNING - we keep this file for historical reasons only but it is deprecated
+
+it's only value is for the code that scans the images area, which needs more work anyway
+"""
+
+print(note)
+exit(0)
+
 from pathlib import Path
 import re
 import json
