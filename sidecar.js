@@ -45,16 +45,16 @@ let global_ssl_cert = undefined;
 // locate and load certificates
 function ssl_cert_options() {
     try {
-	// the production box
-	// load the installed SSL certs for r2lab as defined in httpd config
-	// see file /etc/httpd/conf.d/r2lab.vhost
-	return {
-	    key  : fs.readFileSync(global_ssl_key),
-	    cert : fs.readFileSync(global_ssl_cert),
-	}
+        // the production box
+        // load the installed SSL certs for r2lab as defined in httpd config
+        // see file /etc/httpd/conf.d/r2lab.vhost
+        return {
+            key  : fs.readFileSync(global_ssl_key),
+            cert : fs.readFileSync(global_ssl_cert),
+        }
     } catch (err) {
-	console.log(`Could not load SSL material : ${err}`);
-	process.exit(1);
+        console.log(`Could not load SSL material : ${err}`);
+        process.exit(1);
     }
 }
 
@@ -83,7 +83,7 @@ function display() {
 // display only if in verbose mode
 function vdisplay() {
     if (verbose_flag)
-	display.apply(this, arguments);
+        display.apply(this, arguments);
 }
 
 // in the following, name = 'nodes' or 'phones' or 'leases' 
@@ -95,9 +95,9 @@ function request_channel_name(name) {
 }
 function db_filename(name) {
     if (! local_flag) {
-	return `/var/lib/sidecar/${name}.json`;
+        return `/var/lib/sidecar/${name}.json`;
     } else {
-	return `./${name}.json`;
+        return `./${name}.json`;
     }
 }
 
@@ -115,7 +115,7 @@ function initialize_socketio(io) {
 io.on('connection', function(socket){
     display('user connect');
     socket.on('disconnect', function(){
-	display('user disconnect');
+        display('user disconnect');
     });
 });
 
@@ -131,28 +131,28 @@ function prepare_persistent_channel(socket, name) {
     let filename = db_filename(name);
     vdisplay(`arming callback for channel ${info_channel}`);
     socket.on(info_channel, function(news_string) {
-	vdisplay(`received on channel ${info_channel} chunk ${news_string}`)
-	let infos_to_emit = update_dbfile_from_news(filename, news_string, incremental_flag);
-	// avoid the noise of sending empty news
-	if (infos_to_emit.length >= 1) {
-	    let string_to_emit = JSON.stringify(infos_to_emit);
-	    io.emit(info_channel, string_to_emit);
-	    vdisplay(`emitting on ${info_channel} chunk ${string_to_emit}`);
-	    display(`emitting on ${info_channel} ${infos_to_emit.length} chunks`);
-	} else {
-	    vdisplay(`no news found in news_string (was ${news_string.length} chars long)`);
-	}
+        vdisplay(`received on channel ${info_channel} chunk ${news_string}`)
+        let infos_to_emit = update_dbfile_from_news(filename, news_string, incremental_flag);
+        // avoid the noise of sending empty news
+        if (infos_to_emit.length >= 1) {
+            let string_to_emit = JSON.stringify(infos_to_emit);
+            io.emit(info_channel, string_to_emit);
+            vdisplay(`emitting on ${info_channel} chunk ${string_to_emit}`);
+            display(`emitting on ${info_channel} ${infos_to_emit.length} chunks`);
+        } else {
+            vdisplay(`no news found in news_string (was ${news_string.length} chars long)`);
+        }
     });
     // this now is how complete status gets transmitted initially
     let request_channel = request_channel_name(name);
     vdisplay(`arming callback for channel ${request_channel}`);
     socket.on(request_channel, function(msg) {
-	display(`Received ${msg} on channel ${request_channel}`);
-	// feature : if we can find 'CLEAR' in the text, we clear our own db
-	if (msg.indexOf('CLEAR') != -1) {
-	    clean_dbfile(filename);
-	} 
-	emit_file(io, filename, info_channel);
+        display(`Received ${msg} on channel ${request_channel}`);
+        // feature : if we can find 'CLEAR' in the text, we clear our own db
+        if (msg.indexOf('CLEAR') != -1) {
+            clean_dbfile(filename);
+        } 
+        emit_file(io, filename, info_channel);
     });
 }
 
@@ -162,16 +162,16 @@ function prepare_non_persistent_channel(socket, name) {
     let info_channel = info_channel_name(name);
     vdisplay(`arming callback for channel ${info_channel}`);
     socket.on(info_channel, function(infos){
-	io.emit(info_channel, infos);
-	let json = JSON.parse(infos);
-	display(`Forwarding ${json.length} items on non-persistent channel ${info_channel}`);
+        io.emit(info_channel, infos);
+        let json = JSON.parse(infos);
+        display(`Forwarding ${json.length} items on non-persistent channel ${info_channel}`);
     });
 
     let request_channel = request_channel_name(name);
     vdisplay(`arming callback for channel ${request_channel}`);
     socket.on(request_channel, function(anything) {
-	display(`Forwarding trigger message ${anything} on channel ${request_channel}`);
-	io.emit(request_channel, anything);
+        display(`Forwarding trigger message ${anything} on channel ${request_channel}`);
+        io.emit(request_channel, anything);
     });
     
 }
@@ -194,31 +194,31 @@ io.on('connection', function(socket){
 // convenience function to synchroneously read a file as a string
 function sync_read_file_as_string(filename){
     try {
-	let contents = fs.readFileSync(filename, 'utf8');
-	vdisplay(`sync read ${filename} -> ${contents.length} chars`);
-	if (! contents) {
-	    display(`${filename}: WARNING, could not read`);
-	    // artificially return an empty list
-	    return "[]";
-	} else {
-	    return contents;
-	}
+        let contents = fs.readFileSync(filename, 'utf8');
+        vdisplay(`sync read ${filename} -> ${contents.length} chars`);
+        if (! contents) {
+            display(`${filename}: WARNING, could not read`);
+            // artificially return an empty list
+            return "[]";
+        } else {
+            return contents;
+        }
     } catch(err){
-	display(`${filename}: could not read - ${err}`);
-	return "[]";
+        display(`${filename}: could not read - ${err}`);
+        return "[]";
     }
 }
 
 // same but do JSON.parse on result
 function sync_read_file_as_infos(filename) {
     try {
-	return JSON.parse(sync_read_file_as_string(filename));
+        return JSON.parse(sync_read_file_as_string(filename));
     } catch(err) {
-	display(`${filename}: could not parse JSON - ${err}`);
-	// return an empty list in this case
-	// useful for when the file does not exist yet
-	// a little hacky as this assumes all our files contain JSON lists
-	return [];
+        display(`${filename}: could not parse JSON - ${err}`);
+        // return an empty list in this case
+        // useful for when the file does not exist yet
+        // a little hacky as this assumes all our files contain JSON lists
+        return [];
     }
 }
 
@@ -226,10 +226,10 @@ function sync_read_file_as_infos(filename) {
 function emit_file(io, filename, channel){
     let complete_string = sync_read_file_as_string(filename);
     if (complete_string) {
-	vdisplay(`emit_file: sending on channel ${channel}:${complete_string.length} chars`);
-	io.emit(channel, complete_string);
+        vdisplay(`emit_file: sending on channel ${channel}:${complete_string.length} chars`);
+        io.emit(channel, complete_string);
     } else {
-	display(`OOPS - not emitting - empty contents found in ${filename}`)
+        display(`OOPS - not emitting - empty contents found in ${filename}`)
     }
 }
 
@@ -237,11 +237,11 @@ function emit_file(io, filename, channel){
 // we do everything synchroneously to avoid trouble
 function sync_save_dbfile(filename, infos){
     try {
-	let contents = JSON.stringify(infos);
-	fs.writeFileSync(filename, contents, 'utf8');
-	vdisplay(`sync (over)wrote ${contents.length} on ${filename}`)
+        let contents = JSON.stringify(infos);
+        fs.writeFileSync(filename, contents, 'utf8');
+        vdisplay(`sync (over)wrote ${contents.length} on ${filename}`)
     } catch(err) {
-	display(`${filename}: could not sync write ${filename} - ${err}`);
+        display(`${filename}: could not sync write ${filename} - ${err}`);
     }
 }
 
@@ -256,24 +256,24 @@ function sync_save_dbfile(filename, infos){
 //       only the changes to the db are reported
 function update_dbfile_from_news(filename, news_string, incremental_mode) {
     if (news_string == "") {
-	display("OOPS - empty news feed - ignoring");
-	return [];
+        display("OOPS - empty news feed - ignoring");
+        return [];
     }
     try {
-	// start from the complete infos
-	let complete_infos = sync_read_file_as_infos(filename);
-	// convert string into infos
-	let news_infos = JSON.parse(news_string);
-	vdisplay(`updating dbfile with ${news_infos.length} news infos`);
-	// merge both and save in file
-	let delta_infos = merge_news_into_complete(complete_infos, news_infos, filename);
-	// xxx
-	return incremental_mode ? delta_infos : news_infos;
+        // start from the complete infos
+        let complete_infos = sync_read_file_as_infos(filename);
+        // convert string into infos
+        let news_infos = JSON.parse(news_string);
+        vdisplay(`updating dbfile with ${news_infos.length} news infos`);
+        // merge both and save in file
+        let delta_infos = merge_news_into_complete(complete_infos, news_infos, filename);
+        // xxx
+        return incremental_mode ? delta_infos : news_infos;
     } catch(err) {
-	display(` OOPS - unexpected exception in update_dbfile_from_news`,
-		`news_string was ${news_string}`,
-		`strack trace is ${err.stack}`);
-	return [];
+        display(` OOPS - unexpected exception in update_dbfile_from_news`,
+                `news_string was ${news_string}`,
+                `strack trace is ${err.stack}`);
+        return [];
     }
 }
 
@@ -284,44 +284,44 @@ function update_dbfile_from_news(filename, news_string, incremental_mode) {
 function merge_news_into_complete(complete_infos, news_infos, filename) {
     let delta_infos = [];
     news_infos.forEach(function(news_info) {
-	let id = news_info.id;
-	let item_already_present_in_db = false;
-	complete_infos.forEach(function(complete_info) {
-	    // search for corresponding item in complete db
-	    if (complete_info['id'] == id) {
-		item_already_present_in_db = true;
-		let items_has_changes = false;
-		let delta_info;
-		// copy all contents from news_info into complete_infos
-		for (let prop in news_info) {
-		    // do we have change for that node x prop
-		    if ( (news_info[prop] != undefined) &&
-			 (complete_info[prop] != news_info[prop]) ) {
-			// is this the first change detected for that node
-			if ( ! items_has_changes) {
-			    items_has_changes = true;
-			    delta_info = { 'id' : id };
-			    delta_infos.push(delta_info);
-			}
-			// check if we need to create a delta_info 
-			complete_info[prop] = news_info[prop];
-			delta_info[prop] = news_info[prop];
-		    }
-		}
-		// we're done searching for this item
-		// skip rest of search in complete_infos
-		return;
-	    }
-	})
-	// complete gets created empty at the very beginning
-	// so, if id is not yet known, add it as-is
-	if (! item_already_present_in_db) {
-	    complete_infos.push(news_info);
-	    delta_infos.push(news_info);
-	}
+        let id = news_info.id;
+        let item_already_present_in_db = false;
+        complete_infos.forEach(function(complete_info) {
+            // search for corresponding item in complete db
+            if (complete_info['id'] == id) {
+                item_already_present_in_db = true;
+                let items_has_changes = false;
+                let delta_info;
+                // copy all contents from news_info into complete_infos
+                for (let prop in news_info) {
+                    // do we have change for that node x prop
+                    if ( (news_info[prop] != undefined) &&
+                         (complete_info[prop] != news_info[prop]) ) {
+                        // is this the first change detected for that node
+                        if ( ! items_has_changes) {
+                            items_has_changes = true;
+                            delta_info = { 'id' : id };
+                            delta_infos.push(delta_info);
+                        }
+                        // check if we need to create a delta_info 
+                        complete_info[prop] = news_info[prop];
+                        delta_info[prop] = news_info[prop];
+                    }
+                }
+                // we're done searching for this item
+                // skip rest of search in complete_infos
+                return;
+            }
+        })
+        // complete gets created empty at the very beginning
+        // so, if id is not yet known, add it as-is
+        if (! item_already_present_in_db) {
+            complete_infos.push(news_info);
+            delta_infos.push(news_info);
+        }
     })
     if (filename) {
-	sync_save_dbfile(filename, complete_infos);
+        sync_save_dbfile(filename, complete_infos);
     }
 
     return delta_infos;
@@ -342,30 +342,30 @@ function parse_args() {
     // very rough parsing of command line args - to set verbosity
     let argv = process.argv.slice(2);
     for (let index=0; index < argv.length; index++) {
-	let arg = argv[index];
-	if (arg == "-v") {
-	    verbose_flag = true;
-	} else if (arg == "-l") {
-	    // local / devel  (use json files and logs in .)
-	    local_flag = true;
-	    default_ssl_cert = "localhost.crt";
-	    default_ssl_key  = "localhost.key";
-	    default_url = default_devel_url;
-	} else if (arg == "-c") {
-	    incremental_flag = false;
-	} else if (arg == "-u") {
-	    global_url = argv[index+1];
-	    index ++;
-	} else if (arg == "-C") {
-	    global_ssl_cert = argv[index+1];
-	    index ++;
-	} else if (arg == "-K") {
-	    global_ssl_key = argv[index+1];
-	    index ++;
-	} else {
-	    console.log(usage);
-	    process.exit(1);
-	} 
+        let arg = argv[index];
+        if (arg == "-v") {
+            verbose_flag = true;
+        } else if (arg == "-l") {
+            // local / devel  (use json files and logs in .)
+            local_flag = true;
+            default_ssl_cert = "localhost.crt";
+            default_ssl_key  = "localhost.key";
+            default_url = default_devel_url;
+        } else if (arg == "-c") {
+            incremental_flag = false;
+        } else if (arg == "-u") {
+            global_url = argv[index+1];
+            index ++;
+        } else if (arg == "-C") {
+            global_ssl_cert = argv[index+1];
+            index ++;
+        } else if (arg == "-K") {
+            global_ssl_key = argv[index+1];
+            index ++;
+        } else {
+            console.log(usage);
+            process.exit(1);
+        } 
     }
     global_url = (global_url || default_url);
     global_ssl_cert = (global_ssl_cert || default_ssl_cert);
@@ -384,9 +384,9 @@ function parse_args() {
 // run http server
 function run_server() {
     process.on('SIGINT', function(){
-	display("Received SIGINT - exiting"); process.exit(1);});
+        display("Received SIGINT - exiting"); process.exit(1);});
     process.on('SIGTERM', function(){
-	display("Received SIGTERM - exiting"); process.exit(1);});
+        display("Received SIGTERM - exiting"); process.exit(1);});
 
 
     // https://nodejs.org/docs/latest/api/url.html
@@ -400,31 +400,31 @@ function run_server() {
     let express_app = express();
     let server;
     if (scheme == 'https:') {
-	vdisplay("using https stack");
-	let server_https = https.createServer(ssl_cert_options(), express_app);
-	server = server_https;
+        vdisplay("using https stack");
+        let server_https = https.createServer(ssl_cert_options(), express_app);
+        server = server_https;
     } else {
-	vdisplay("using http stack");
-	let server_http = http.Server(express_app);
-	server = server_http;
+        vdisplay("using http stack");
+        let server_http = http.Server(express_app);
+        server = server_http;
     }
 
     process.on('uncaughtException',
-	       function(err) {console.log(`async. execption ->${err}`); })
+               function(err) {console.log(`async. execption ->${err}`); })
 
     try {
-	let io = socketio(server);
-	initialize_socketio(io);
-	server.listen(port, function(){
-	    display(`listening on ${global_url} (hostname ignored)`);
-	    display(`verbose flag is ${verbose_flag}`);
-	    display(`local flag is ${local_flag}`);
-	    display(`incremental mode is ${incremental_flag}`);
-	});
+        let io = socketio(server);
+        initialize_socketio(io);
+        server.listen(port, function(){
+            display(`listening on ${global_url} (hostname ignored)`);
+            display(`verbose flag is ${verbose_flag}`);
+            display(`local flag is ${local_flag}`);
+            display(`incremental mode is ${incremental_flag}`);
+        });
     } catch (err) {
-	console.log(`Could not run http server on port ${port}`);
-	console.log(`Need to sudo ?`);
-	console.log(err);
+        console.log(`Could not run http server on port ${port}`);
+        console.log(`Need to sudo ?`);
+        console.log(err);
     }
 }
 
