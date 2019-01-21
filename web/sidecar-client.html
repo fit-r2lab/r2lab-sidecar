@@ -8,19 +8,22 @@
         <meta charset="UTF-8">
     </head>
     <body>
-<div class="grid-container">
-  <div id="head" style="grid-area:head">
-       <div id="url-label">Sidecar URL:</div>
-       <input id="url"/>
-       <div id="connection-status"></div>
-  </div>
-  <div id="left-buttons" style="grid-area:left-buttons">
-    <button id="connect" onclick="set_url()">Apply/Reconnect</button>
-    <button id="devel" onclick="set_devel_url()">localhost</button>
-    <button id="prod" onclick="set_prod_url()">r2lab</button>
-    <button id="disconnect" onclick="disconnect()">Disconnect</button>
-    <button id="clear" onclick="clear_all()">Clear</button>
-  </div>
-  <div id="separator-controls"></div>
-  <div id="separator-contents"></div>
+        <div class="head-grid">
+           <div id="top-line" style="grid-area:head">
+               <div id="url-label">Sidecar URL:</div>
+               <input id="url"/>
+               <div id="connection-status"></div>
+           </div>
+           <div id="left-buttons" style="grid-area:left-buttons">
+              <button id="connect" onclick="set_url()">Apply/Reconnect</button>
+               <button id="devel" onclick="set_devel_url()">localhost</button>
+               <button id="prod" onclick="set_prod_url()">r2lab</button>
+               <button id="disconnect" onclick="disconnect()">Disconnect</button>
+               <button id="clear" onclick="clear_all()">Clear</button>
+           </div>
+           <div id="separator-controls"></div>
+       </div>
+       <div class="body-grid" id="top-contents">
+       </div>
+    </body>
 </html>

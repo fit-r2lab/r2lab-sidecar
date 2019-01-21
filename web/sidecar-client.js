@@ -62,7 +62,7 @@ let populate = function() {
         $(`#${category}-request-input`).append(
             $(`<input />`).val(`${categories[category].def_request}`));
         // contents area
-        $(`#separator-contents`).after(
+        $(`#top-contents`).append(
             $(`<div>`,
               {id: `${category}-contents`,
                class: "contents",

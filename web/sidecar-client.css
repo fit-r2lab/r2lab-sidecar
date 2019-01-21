@@ -1,7 +1,9 @@
-.grid-container {
+/* the first grid with inputs and buttons */
+
+.head-grid {
+  background-color: #eee;
   display: grid;
   grid-template-columns: 10em 8em 10em 2fr;
-  background-color: #eee;
   grid-template-areas:
     "head head head head"
     "left-buttons nodes-label nodes-request-button nodes-request-input"
@@ -10,8 +12,7 @@
     "left-buttons phones-label phones-info-button phones-info-input"
     "left-buttons leases-label leases-request-button leases-request-input"
     "left-buttons leases-label leases-info-button leases-info-input"
-    "nodes-contents nodes-contents nodes-contents nodes-contents"
-    "phones-contents phones-contents phones-contents phones-contents"
+    "nodes-contents nodes-contents phones-contents phones-contents"
     "leases-contents leases-contents leases-contents leases-contents"
     ;
   grid-column-gap: 2px;
@@ -20,23 +21,25 @@
   align-items: center;
 }
 
-#head {
+/* the line with URL and status */
+#top-line {
     display: flex;
     flex-direction: row;
 }
 
-#head>#url-label {
+#top-line>#url-label {
     font-size: 20px;
     width: 12em;
     padding-top: 8px;
 }
-#head>input {
+#top-line>input {
     width: 20em;
 }
-#head>#connection-status {
+#top-line>#connection-status {
     width: 100%;
 }
 
+/* the leaft area with connection management buttons */
 #left-buttons {
     height: 100%;
     display: flex;
@@ -52,21 +55,20 @@
     background-color: #ddd;
 }
 
-
-.grid-container>div {
+/* actual inputs and buttons area */
+.head-grid>div {
     font-size: 30px;
     text-align: center;
     width: 100%;
 }
 
-.grid-container>div.contents {
+.head-grid>div.contents {
     border-top: 1px solid #888;
     font-size: 20px;
     margin: 5px;
     text-align: left;
     padding-top: 8px;
 }
-
 
 button {
     padding: 4px;
@@ -84,9 +86,33 @@ input {
     font-size: 18px;
 }
 
+/* -------------------- contents */
+.body-grid {
+    background-color: #aaa;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-areas:
+       "nodes-contents phones-contents leases-contents";
+    grid-column-gap: 2px;
+    grid-row-gap: 2px;
+    justify-items: center;
+    align-items: center;
+}
+
+
+/* actual contents */
+.body-grid>div {
+    font-size: 30px;
+    text-align: left;
+    width: 100%;
+}
+
 span.date {
     font-size: 12px;
 }
 div.contents>ul>li>ul>li {
     font-size: 15px;
 }
+
+
+
