@@ -1,9 +1,0 @@
-{
-  "name": "r2lab-status",
-  "version": "0.0.1",
-  "description": "dispatch r2lab status",
-  "dependencies": {
-    "socket.io": "^1.3.6",
-    "express": ""
-  }
-}

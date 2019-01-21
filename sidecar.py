@@ -72,16 +72,16 @@ import websockets
 
 
 # pass logging.DEBUG if needed
-def init_logger(level=logging.INFO):
+def init_logging(level=logging.INFO):
     """
-    initialize global logger object
+    initialize global log object
     """
     logging.basicConfig(
         stream=sys.stdout,
         level=level,
         format='%(levelname)s %(asctime)s: %(message)s',
         datefmt="%m-%d %H:%M:%S")
-init_logger()
+init_logging()
 
 class Category:
     """
@@ -91,9 +91,13 @@ class Category:
     def __init__(self, name, persistent=False):
         self.name = name
         self.persistent = persistent
+        ##
+        self.filename = None
         self.contents = []
+        # relevant only when persistent
+        self.by_id = {}
 
-    def _filenames(self):
+    def _candidate_filenames(self):
         return [
             f"/var/lib/sidecar/{self.name}.json",
             f"./{self.name}.json",
@@ -104,17 +108,23 @@ class Category:
         result += f" with {len(self.contents)} items"
         return result
 
+    def rehash(self):
+        if self.persistent:
+            self.by_id = {info['id']: info for info in self.contents}
+
     def load(self):
         """
         Load from permanent storage
         Either use file from /var/log if available,
         otherwise from .
         """
-        for filename in self._filenames():
+        for filename in self._candidate_filenames():
             try:
                 path = Path(filename)
                 with path.open() as feed:
                     self.contents = json.loads(feed.read())
+                    self.rehash()
+                    self.filename = filename
                     return
             except IOError:
                 logging.warning(f"category {self.name}"
@@ -122,6 +132,51 @@ class Category:
         # we've failed
         self.contents = []
 
+    def store(self):
+        """
+        Store current contents
+        """
+        # if we've loaded from a filename, re-use it
+        # otherwise, write into the first candidate
+        if self.filename:
+            candidates = [self.filename]
+        else:
+            candidates = self._candidate_filenames()
+        for filename in candidates:
+            try:
+                with open(filename, 'w') as writer:
+                    writer.write(json.dumps(self.contents) + "\n")
+                    self.filename = filename
+                    logging.info(f"Stored {self.name} in {filename}")
+                return True
+            except IOError:
+                pass
+        logging.error(f"could not save category {self}")
+        return False
+
+    def update(self, infos):
+        """
+        triples is a list of triples of the form
+        {'id': something, 'somekey': 'somevalue', 'anotherkey': 'anotherval'}
+        []
+        """
+        if not self.persistent:
+            self.contents = infos
+            self.store()
+        else:
+            for new_info in infos:
+                if 'id' not in new_info:
+                    logging.error(f"info object lacks id {new_info}")
+                else:
+                    if id not in self.by_id:
+                        info = dict(id=id)
+                        self.contents.append(info)
+                        self.by_id[id] = info
+                    else:
+                        info = self.by_id[id]
+                    info.update(new_info)
+                    self.rehash()
+            self.store()
 
 
 CATEGORIES = [
@@ -163,34 +218,63 @@ class SidecarServer:
         """
         self.clients.remove(websocket)
 
+    def check_umbrella(self, umbrella, check_infos):
+        """
+        Check payload once it's been json-unmarshalled
+        """
+        if ('action' not in umbrella or
+                umbrella['action'] not in ('request', 'info')):
+            logging.error(f"Ignoring misformed umbrella {umbrella}")
+            return False
+        if ('category' not in umbrella or
+                umbrella['category'] not in self.hash):
+            logging.error(f"Ignoring unknown category in {umbrella}")
+            return False
+        if 'message' not in umbrella:
+            logging.error(f"Ignoring payload without a 'message' {umbrella}")
+            return False
+        if check_infos:
+            message = umbrella['message']
+            if not isinstance(message, list):
+                logging.error(f"Unexpected message of type {type(message).__name__} - should be a list")
+                return False
+        return True
+
     async def broadcast(self, category, origin):
         logging.info(f"broadcasting on {len(self.clients)} clients")
         data = self.hash[category].contents
         umbrella = dict(category=category, action="info",
                         message=data)
         for websocket in self.clients:
-            logging.info(f"broadcasting {category} category to {websocket}")
             await websocket.send(json.dumps(umbrella))
 
     async def react_on(self, umbrella, origin):
+        # tmp:
         self.dump(f"entering react_on with {umbrella}")
-        if ('action' not in umbrella
-                and umbrella['action'] not in ('request', 'info')):
-            logging.error(f"Ignoring misformed umbrella {umbrella}")
-            return
         action = umbrella['action']
+        category = umbrella['category']
         if action == 'request':
+            if not self.check_umbrella(umbrella, False):
+                return
+            await self.broadcast(umbrella['category'], origin)
+        elif action == 'info':
+            if not self.check_umbrella(umbrella, True):
+                return
+            self.hash[category].update(umbrella['message'])
+            self.hash[category].store()
             await self.broadcast(umbrella['category'], origin)
 
-
-    def ws_closure(self):
+    def websockets_closure(self):
         self.dump("mainloop")
         async def websockets_loop(websocket, path):
             self.register(websocket)
             try:
                 async for message in websocket:
-                    umbrella = json.loads(message)
-                    await self.react_on(umbrella, websocket)
+                    try:
+                        umbrella = json.loads(message)
+                        await self.react_on(umbrella, websocket)
+                    except json.JSONDecodeError:
+                        logging.error("Ignoring non-json message {message}")
             finally:
                 self.unregister(websocket)
         return websockets_loop
@@ -198,7 +282,7 @@ class SidecarServer:
 
     def run(self):
         loop = asyncio.get_event_loop()
-        task = websockets.serve(self.ws_closure(), 'localhost', 10000)
+        task = websockets.serve(self.websockets_closure(), 'localhost', 10000)
         loop.run_until_complete(task)
         loop.run_forever()
 

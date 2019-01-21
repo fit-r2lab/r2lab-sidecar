@@ -10,54 +10,157 @@ let default_url = prod_url;
 
 let websocket = undefined;
 
-let sections = {
-    nodes : {depth: 10, def_request: '"REQUEST"',
+////////////////////
+let categories = {
+    nodes : {depth: 10, def_request: '"PLEASE"',
              def_info: '[{"id":1, "available":"ko"}]',
              prettifier: pretty_records,
             },
-    phones: {depth: 2,  def_request: '"REQUEST"',
+    phones: {depth: 2,  def_request: '"PLEASE"',
              def_info: '[{"id":1, "airplane_mode":"on"}]',
              prettifier: pretty_records,
             },
-    leases: {depth: 2,  def_request: '"REQUEST"',
+    leases: {depth: 2,  def_request: '"PLEASE"',
              def_info: '-- not recommended --',
              prettifier: pretty_leases,
             },
 }
 
-//////////////////// global functions
-function show_connected(url) {
-    $("#connection_status").css("background-color", "green");
-    $("#connection_status").html("connected to " + url);
+let actions = {
+    info : {color: "green", button: "Send (json) data"},
+    request: {color: "red", button: "Request update"},
 }
-function show_disconnected() {
-    $("#connection_status").css("background-color", "gray");
-    $("#connection_status").html("idle");
+    
+
+let populate = function() {
+    let areas = ['button', 'input'];
+    for (let category in categories) {
+        // the label are - spans 2 lines of the grid
+        $("#separator-controls").after(
+            $(`<div>`, {id: `${category}-label`,
+                        style: `grid-area:${category}-label`,
+                       }).html(`${category}`));
+        // the 4 grid items for input / button and info / request
+        for (let action in actions) {
+            for (let area of areas) {
+                $("#separator-controls").after(
+                    $("<div>", {id: `${category}-${action}-${area}`,
+                                style: `grid-area:${category}-${action}-${area}`,
+                               }));
+            }
+            // create button
+            $(`#${category}-${action}-button`).append(
+                $(`<button>${actions[action].button}</button>`)
+                    .addClass(`${actions[action].color}`));
+            // set its behaviour
+            $(`div#${category}-${action}-button>button`).click(function(e){
+                send(category, action);
+            });
+        }
+        $(`#${category}-info-input`).append(
+            $(`<input />`).val(`${categories[category].def_info}`));
+        $(`#${category}-request-input`).append(
+            $(`<input />`).val(`${categories[category].def_request}`));
+        // contents area
+        $(`#separator-contents`).after(
+            $(`<div>`,
+              {id: `${category}-contents`,
+               class: "contents",
+               style: `grid-area: ${category}-contents`})
+                .html(`Contents of ${category}`)
+                .append(
+                    $(`<ul>`,
+                      {id: `ul-${category}`, class: "contents"}))
+        );
+    }
+}
+
+
+//////////////////// global functions
+function set_status(text, color) {
+    $("#connection-status").css("background-color", color).html(text);
+}    
+
+function update_status() {
+    let color;
+    let text;
+    if (websocket === undefined) {
+        color = "gray";
+        text = "idle";
+    } else switch (websocket.readyState) {
+        case websocket.OPEN:
+            color = "green";
+            text = `connected to ${websocket.url}`;
+            break;
+        case websocket.OPEN:
+            color = "green";
+            text = `connected to ${websocket.url}`;
+            break;
+        case websocket.CONNECTING:
+            color = "orange";
+            text = `connecting to ${websocket.url}`;
+            break;
+        default:
+            color = "red";
+            text = `connection closed to ${websocket.url}`;
+    }
+    set_status(text, color);
+}
+
+
+function cyclic_update() {
+    setTimeout(function () {
+        update_status();
+        cyclic_update();
+    }, 1000);
+}
+
+cyclic_update();
+            
+        
+
+function show_connected(url) {
+    $("#connection-status").css("background-color", "green");
+    $("#connection-status").html("connected to " + url);
+}
+function show_disconnected(message) {
+    $("#connection-status").css("background-color", "gray");
+    $("#connection-status").html(message);
 }
 function show_failed_connection(url) {
-    $("#connection_status").css("background-color", "red");
-    $("#connection_status").html("connection failed to " + url);
+    $("#connection-status").css("background-color", "red");
+    $("#connection-status").html("connection failed to " + url);
 }
 
 function connect_sidecar(url) {
     if (websocket) {
         disconnect();
     }
-    console.log("Connecting to sidecar at " + url);
-    websocket = new WebSocket(url)
-    show_connected(url);
-    for (let category in sections) {
-        // behaviour for the apply buttons
-        $(`div#request-${category}>button`).click(function(e){
-            send(category, 'request', 'request-');
-        });
-        $(`div#info-${category}>button`).click(function(e){
-            send(category, 'info', 'info-');
-        });
+    console.log(`Connecting to sidecar at ${url}`);
+    websocket = new WebSocket(url);
+    set_status("connecting ..", "orange");
+
+    // ignore events that do not target the current websocket instance
+    // this may happen typically when reconnecting, we close and immediately
+    // re-open, but the close event comes back referring to the previous connection
+    websocket.onopen = function(event) {
+        if (event.target != websocket)
+            return;
+        update_status();
     }
+    websocket.onclose = function(event) {
+        if (event.target != websocket)
+            return;
+        websocket = undefined;
+        update_status();
+    }
+
     websocket.onmessage = function(event) {
+        if (event.target != websocket)
+            return;
+        console.log("receiving message on websocket", websocket);
         let umbrella = JSON.parse(event.data);
-        console.log(`ws: incoming umbrella ${umbrella}`)
+        console.log(`websockets: incoming umbrella`, umbrella)
         let category = umbrella.category;
         let action = umbrella.action;
         let message = umbrella.message;
@@ -86,7 +189,7 @@ let disconnect = function() {
     console.log("disconnecting")
     websocket.close();
     websocket = undefined;
-    show_disconnected();
+    show_disconnected("idle");
 }
 
 let set_devel_url = function(e) {
@@ -129,11 +232,11 @@ function update_contents(name, value) {
     let ul_sel = `#ul-${name}`;
     let $ul = $(ul_sel);
     let details = JSON.stringify(value);
-    let prettifier = sections[name].prettifier;
+    let prettifier = categories[name].prettifier;
     if (prettifier)
         details = prettifier(details);
     let html = `<li><span class="date">${new Date()}</span>${details}</li>`;
-    let depth = sections[name].depth;
+    let depth = categories[name].depth;
     let lis = $(`${ul_sel}>li`);
     if (lis.length >= depth) {
         lis.first().remove()
@@ -142,49 +245,20 @@ function update_contents(name, value) {
 }
 
 let clear_all = function() {
-    for (let name in sections) {
+    for (let name in categories) {
         $(`#ul-${name}`).html("");
     }
 }
 
 
-let populate = function() {
-    for (let name in sections) {
-        // create form for the request input
-        let html;
-        html = "";
-        html += `<div class="allpage" id="request-${name}">`;
-        html += `<span class="header"> send Request ${name}</span>`;
-        html += `<input id="request-${name}" /><button class="green">Request update</button>`;
-        html += `</div>`;
-        html += `<div class="allpage" id="info-${name}">`;
-        html += `<span class="header">send raw (json) line as ${name}</span>`;
-        html += `<input class="wider" id="info-${name}" /><button class="red">Send json</button>`;
-        html += `</div>`;
-        html += `<hr/>`;
-        $("#controls").append(html);
-        html = "";
-        html += `<div class="contents" id="contents-${name}">`;
-        html += `<h3>Contents of ${name}</h3>`;
-        html += `<ul class="contents" id="ul-${name}"></ul>`;
-        html += `<hr/>`;
-        html += `</div>`;
-        $("#contents").append(html);
-        $(`div#info-${name}>input`).val(sections[name].def_info);
-        $(`div#request-${name}>input`).val(sections[name].def_request);
-    }
-};
-
-function send(category, action, widget_prefix) {
+function send(category, action) {
     let umbrella = {category: category, action: action};
-    let selector = `input#${widget_prefix}${category}`;
+    let selector = `div#${category}-${action}-input>input`;
     let strmessage = $(selector).val();
-    console.log(`selector=${selector}`, `strmessage`, strmessage);
     let objmessage = JSON.parse(strmessage);
     umbrella.message = objmessage;
     console.log(`emitting on category ${category} action ${action}`, umbrella);
-    let json=JSON.stringify(umbrella);
-    console.log(`json`, json);
+    let json = JSON.stringify(umbrella);
     websocket.send(json);
     return false;
 }

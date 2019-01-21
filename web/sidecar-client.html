@@ -1,25 +1,26 @@
 <!doctype html>
 <html>
-  <head>
-    <title>sidecar client</title>
-    <script src="http://code.jquery.com/jquery-2.1.4.js"></script>
-    <script src="sidecar-ws.js"></script>
-    <link type="text/css" rel="stylesheet" href="sidecar-client.css"/>
-  </head>
-  <body>
-    <div class="allpage" id="url">
-    <span id="connection_status"></span> <br/><br/>
-    <span class="header">sidecar url</span>
-    <input class="wider" id="url"/>
-    <button id="devel" onclick="set_devel_url()">Use devel sidecar</button>
-    <button id="prod" onclick="set_prod_url()">Use production sidecar</button>
-    <button id="disconnect" onclick="disconnect()">Disconnect</button>
+    <head>
+        <title>sidecar client</title>
+        <script src="http://code.jquery.com/jquery-2.1.4.js"></script>
+        <script src="sidecar-client.js"></script>
+        <link type="text/css" rel="stylesheet" href="sidecar-client.css"/>
+        <meta charset="UTF-8">
+    </head>
+    <body>
+<div class="grid-container">
+  <div id="head" style="grid-area:head">
+       <div id="url-label">Sidecar URL:</div>
+       <input id="url"/>
+       <div id="connection-status"></div>
+  </div>
+  <div id="left-buttons" style="grid-area:left-buttons">
     <button id="connect" onclick="set_url()">Apply/Reconnect</button>
+    <button id="devel" onclick="set_devel_url()">localhost</button>
+    <button id="prod" onclick="set_prod_url()">r2lab</button>
+    <button id="disconnect" onclick="disconnect()">Disconnect</button>
     <button id="clear" onclick="clear_all()">Clear</button>
-    <hr>
-    </div>
-
-    <div id='controls'></div>
-    <div id='contents'></div>
-  </body>
+  </div>
+  <div id="separator-controls"></div>
+  <div id="separator-contents"></div>
 </html>
