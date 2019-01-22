@@ -71,17 +71,11 @@ import asyncio
 import websockets
 
 
-# pass logger.DEBUG if needed
-def init_logger(level=logger.INFO):
-    """
-    initialize global log object
-    """
-    logger.basicConfig(
-        stream=sys.stdout,
-        level=level,
-        format='%(levelname)s %(asctime)s: %(message)s',
-        datefmt="%m-%d %H:%M:%S")
-init_logger()
+logger.basicConfig(
+    stream=sys.stdout,
+    level=logger.INFO,
+    format='%(levelname)s %(asctime)s: %(message)s',
+    datefmt="%m-%d %H:%M:%S")
 
 class Category:
     """
@@ -270,7 +264,7 @@ class SidecarServer:
             await self.broadcast(umbrella['category'], origin)
 
     def websockets_closure(self):
-        self.dump("mainloop")
+        self.dump(f"mainloop")
         async def websockets_loop(websocket, path):
             self.register(websocket)
             try:
@@ -279,7 +273,7 @@ class SidecarServer:
                         umbrella = json.loads(message)
                         await self.react_on(umbrella, websocket)
                     except json.JSONDecodeError:
-                        logger.error("Ignoring non-json message {message}")
+                        logger.error(f"Ignoring non-json message {message}")
             finally:
                 self.unregister(websocket)
         return websockets_loop
@@ -291,6 +285,7 @@ class SidecarServer:
         loop.run_until_complete(task)
         loop.run_forever()
 
+
+
 if __name__ == '__main__':
-    server = SidecarServer()
-    server.run()
+    SidecarServer().run()

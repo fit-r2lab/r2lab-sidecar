@@ -16,7 +16,7 @@ let categories = {
              def_info: '[{"id":1, "available":"ko"}]',
              prettifier: pretty_records,
             },
-    phones: {depth: 2,  def_request: '"PLEASE"',
+    phones: {depth: 5,  def_request: '"PLEASE"',
              def_info: '[{"id":1, "airplane_mode":"on"}]',
              prettifier: pretty_records,
             },
@@ -67,7 +67,7 @@ let populate = function() {
               {id: `${category}-contents`,
                class: "contents",
                style: `grid-area: ${category}-contents`})
-                .html(`Contents of ${category}`)
+                .html(`${category}`)
                 .append(
                     $(`<ul>`,
                       {id: `ul-${category}`, class: "contents"}))
@@ -228,10 +228,14 @@ function pretty_records(records) {
     records.forEach(function(record) {
         let inside = $(`<ul>`);
         for (let attribute of Object.keys(record).sort()) 
-            inside.append($(`<li>`).html(`${attribute} = ${JSON.stringify(record[attribute])}`));
+            inside.append($(`<li>`).html(`"${attribute}" : ${JSON.stringify(record[attribute])}`));
+        let color_class =
+            ((record['available'] == 'ko')
+             || (record['airplane_mode'] == 'fail')) ? "red" : "";
         bullets.append(
             $(`<span>`)
                 .addClass('record')
+                .addClass(color_class)
                 .html(record.id)
                 .tooltip({title: inside, html: true}))
     });
@@ -252,9 +256,9 @@ function update_contents(name, value) {
     let lis = $(`${ul_sel}>li`);
     console.log(`trimming to ${depth} from ${lis.length}`);
     if (lis.length >= depth) {
-        lis.first().remove()
+        lis.last().remove()
     }
-    $(ul_sel).append(item);
+    $(ul_sel).prepend(item);
 }
 
 let clear_all = function() {

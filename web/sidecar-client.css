@@ -78,10 +78,10 @@ button {
     border-radius: 5px;
 }
 
-button.red {
+.red {
     background-color: Tomato;
 }
-button.green {
+.green {
     background-color: Teal;
 }
 input {
@@ -94,13 +94,13 @@ input {
 .body-grid {
     background-color: #e0e0e8;
     display: grid;
-    grid-template-columns: 40% 30% 30%;
+    grid-template-columns: 40% 20% 40%;
     grid-template-areas:
        "nodes-contents phones-contents leases-contents";
     grid-column-gap: 2px;
     grid-row-gap: 2px;
     justify-items: center;
-    align-items: center;
+    align-items: start;
 }
 
 
@@ -110,12 +110,8 @@ input {
     text-align: left;
     width: 100%;
     padding: 20px;
+    border: .5px solid blue;
 }
-
-/* somehow this works oddly 
-div#nodes-contents, div#phones-contents {
-    border-left: 1px solid black;
-}*/
 
 
 span.date {
