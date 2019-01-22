@@ -65,23 +65,23 @@ As the focal point, the server:
 import sys
 import json
 from pathlib import Path
-import logging
+import logging as logger
 
 import asyncio
 import websockets
 
 
-# pass logging.DEBUG if needed
-def init_logging(level=logging.INFO):
+# pass logger.DEBUG if needed
+def init_logger(level=logger.INFO):
     """
     initialize global log object
     """
-    logging.basicConfig(
+    logger.basicConfig(
         stream=sys.stdout,
         level=level,
         format='%(levelname)s %(asctime)s: %(message)s',
         datefmt="%m-%d %H:%M:%S")
-init_logging()
+init_logger()
 
 class Category:
     """
@@ -95,8 +95,10 @@ class Category:
         self.filename = None
         self.contents = []
         # relevant only when persistent
-        self.by_id = {}
+        self.hash_by_id = {}
 
+    # for devel mode: use files in .
+    # when /var/lib is not writable for us
     def _candidate_filenames(self):
         return [
             f"/var/lib/sidecar/{self.name}.json",
@@ -110,7 +112,7 @@ class Category:
 
     def rehash(self):
         if self.persistent:
-            self.by_id = {info['id']: info for info in self.contents}
+            self.hash_by_id = {info['id']: info for info in self.contents}
 
     def load(self):
         """
@@ -127,7 +129,7 @@ class Category:
                     self.filename = filename
                     return
             except IOError:
-                logging.warning(f"category {self.name}"
+                logger.warning(f"category {self.name}"
                                 f" could not open {path}")
         # we've failed
         self.contents = []
@@ -147,11 +149,11 @@ class Category:
                 with open(filename, 'w') as writer:
                     writer.write(json.dumps(self.contents) + "\n")
                     self.filename = filename
-                    logging.info(f"Stored {self.name} in {filename}")
+                    logger.info(f"Stored {self.name} in {filename}")
                 return True
             except IOError:
                 pass
-        logging.error(f"could not save category {self}")
+        logger.error(f"could not save category {self}")
         return False
 
     def update(self, infos):
@@ -160,20 +162,23 @@ class Category:
         {'id': something, 'somekey': 'somevalue', 'anotherkey': 'anotherval'}
         []
         """
+        # non-persistent categories receive the whole list each time
+        # and that overrides contents
         if not self.persistent:
             self.contents = infos
             self.store()
         else:
             for new_info in infos:
                 if 'id' not in new_info:
-                    logging.error(f"info object lacks id {new_info}")
+                    logger.error(f"info object lacks id {new_info}")
                 else:
-                    if id not in self.by_id:
-                        info = dict(id=id)
+                    oid = new_info['id']
+                    if oid not in self.hash_by_id:
+                        info = dict(id=oid)
                         self.contents.append(info)
-                        self.by_id[id] = info
+                        self.hash_by_id[id] = info
                     else:
-                        info = self.by_id[id]
+                        info = self.hash_by_id[oid]
                     info.update(new_info)
                     self.rehash()
             self.store()
@@ -192,8 +197,8 @@ class SidecarServer:
     """
 
     def __init__(self):
-        self.hash = {category.name: category for category in CATEGORIES}
-        for category in self.hash.values():
+        self.hash_by_category = {category.name: category for category in CATEGORIES}
+        for category in self.hash_by_category.values():
             category.load()
         self.clients = set()
 
@@ -201,10 +206,10 @@ class SidecarServer:
         """
         devel-oriented dump of current status
         """
-        logging.info(f"--- {message}")
-        logging.info(f"SidecarServer with {len(self.clients)} clients")
-        for category in self.hash.values():
-            logging.info(f"{category}")
+        logger.info(f"--- {message}")
+        logger.info(f"SidecarServer with {len(self.clients)} clients")
+        for category in self.hash_by_category.values():
+            logger.info(f"{category}")
 
     def register(self, websocket):
         """
@@ -224,25 +229,25 @@ class SidecarServer:
         """
         if ('action' not in umbrella or
                 umbrella['action'] not in ('request', 'info')):
-            logging.error(f"Ignoring misformed umbrella {umbrella}")
+            logger.error(f"Ignoring misformed umbrella {umbrella}")
             return False
         if ('category' not in umbrella or
-                umbrella['category'] not in self.hash):
-            logging.error(f"Ignoring unknown category in {umbrella}")
+                umbrella['category'] not in self.hash_by_category):
+            logger.error(f"Ignoring unknown category in {umbrella}")
             return False
         if 'message' not in umbrella:
-            logging.error(f"Ignoring payload without a 'message' {umbrella}")
+            logger.error(f"Ignoring payload without a 'message' {umbrella}")
             return False
         if check_infos:
             message = umbrella['message']
             if not isinstance(message, list):
-                logging.error(f"Unexpected message of type {type(message).__name__} - should be a list")
+                logger.error(f"Unexpected message of type {type(message).__name__} - should be a list")
                 return False
         return True
 
     async def broadcast(self, category, origin):
-        logging.info(f"broadcasting on {len(self.clients)} clients")
-        data = self.hash[category].contents
+        logger.info(f"broadcasting on {len(self.clients)} clients")
+        data = self.hash_by_category[category].contents
         umbrella = dict(category=category, action="info",
                         message=data)
         for websocket in self.clients:
@@ -260,8 +265,8 @@ class SidecarServer:
         elif action == 'info':
             if not self.check_umbrella(umbrella, True):
                 return
-            self.hash[category].update(umbrella['message'])
-            self.hash[category].store()
+            self.hash_by_category[category].update(umbrella['message'])
+            self.hash_by_category[category].store()
             await self.broadcast(umbrella['category'], origin)
 
     def websockets_closure(self):
@@ -274,7 +279,7 @@ class SidecarServer:
                         umbrella = json.loads(message)
                         await self.react_on(umbrella, websocket)
                     except json.JSONDecodeError:
-                        logging.error("Ignoring non-json message {message}")
+                        logger.error("Ignoring non-json message {message}")
             finally:
                 self.unregister(websocket)
         return websockets_loop

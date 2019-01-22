@@ -62,6 +62,7 @@
     width: 100%;
 }
 
+/*
 .head-grid>div.contents {
     border-top: 1px solid #888;
     font-size: 20px;
@@ -69,10 +70,12 @@
     text-align: left;
     padding-top: 8px;
 }
+*/
 
 button {
     padding: 4px;
     font-size: 12px;
+    border-radius: 5px;
 }
 
 button.red {
@@ -84,13 +87,14 @@ button.green {
 input {
     width: 100%;
     font-size: 18px;
+    padding: 5px 15px;
 }
 
 /* -------------------- contents */
 .body-grid {
-    background-color: #aaa;
+    background-color: #e0e0e8;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 40% 30% 30%;
     grid-template-areas:
        "nodes-contents phones-contents leases-contents";
     grid-column-gap: 2px;
@@ -105,7 +109,14 @@ input {
     font-size: 30px;
     text-align: left;
     width: 100%;
+    padding: 20px;
 }
+
+/* somehow this works oddly 
+div#nodes-contents, div#phones-contents {
+    border-left: 1px solid black;
+}*/
+
 
 span.date {
     font-size: 12px;
@@ -113,6 +124,15 @@ span.date {
 div.contents>ul>li>ul>li {
     font-size: 15px;
 }
+span.record {
+    margin: 3px;
+    padding: 2px;
+    border: 0.5px solid black;
+    border-radius: 3px;
+}
 
-
+div.records {
+    display: flex;
+    flex-wrap: wrap;
+}
 

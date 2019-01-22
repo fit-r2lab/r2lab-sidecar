@@ -204,44 +204,57 @@ let set_prod_url = function(e) {
     set_url();
 }
 //////////////////// the 3 channels
+function prettyDate() {
+    let now = new Date();
+    return `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+}
+
 // a function to prettify the leases message
-function pretty_leases(json) {
-    let leases = $.parseJSON(json);
-    let html = "<ul>";
-    leases.forEach(function(lease) {
-        html +=
-            `<li>${lease.slicename} from ${lease.valid_from} until ${lease.valid_until}</li>`
+function pretty_leases(records) {
+    let bullets = $(`<ul>`).addClass('leases');
+    records.forEach(function(lease) {
+        bullets.append(
+            $(`<li>`)
+                .html(`${lease.slicename} from ${lease.valid_from} until ${lease.valid_until}`)
+        )
     })
-    html += "</ul>";
-    return html;
 }
 
 // applicable to nodes and phones
-function pretty_records(json) {
-    let records = $.parseJSON(json);
-    let html = "<ul>";
+function pretty_records(records) {
+    records.sort(function(r1, r2) {return r1.id - r2.id;});
+    let bullets = $(`<div>`)
+        .addClass('records');
     records.forEach(function(record) {
-        html += `<li>${JSON.stringify(record)}</li>`;
+        let inside = $(`<ul>`);
+        for (let attribute of Object.keys(record).sort()) 
+            inside.append($(`<li>`).html(`${attribute} = ${JSON.stringify(record[attribute])}`));
+        bullets.append(
+            $(`<span>`)
+                .addClass('record')
+                .html(record.id)
+                .tooltip({title: inside, html: true}))
     });
-    html += "</ul>";
-    return html;
+    return bullets;
 }
 
 // update the 'contents' <ul> and keep at most <depth> entries in there
 function update_contents(name, value) {
     let ul_sel = `#ul-${name}`;
     let $ul = $(ul_sel);
-    let details = JSON.stringify(value);
     let prettifier = categories[name].prettifier;
-    if (prettifier)
-        details = prettifier(details);
-    let html = `<li><span class="date">${new Date()}</span>${details}</li>`;
+    let pretty = prettifier(value);
+    let item = $(`<li>`)
+        .append($(`<span class="date">${prettyDate()}</span>`)
+                .append(pretty));
+
     let depth = categories[name].depth;
     let lis = $(`${ul_sel}>li`);
+    console.log(`trimming to ${depth} from ${lis.length}`);
     if (lis.length >= depth) {
         lis.first().remove()
     }
-    $(ul_sel).append(html);
+    $(ul_sel).append(item);
 }
 
 let clear_all = function() {
@@ -264,4 +277,9 @@ function send(category, action) {
 }
 
 ////////////////////
-$(() => {populate(); set_url();})
+$(() => {
+    populate();
+    set_url();
+    let tooltips = $('[data-toggle="tooltip"]');
+    tooltips.tooltip();
+})
