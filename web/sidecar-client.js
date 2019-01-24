@@ -30,7 +30,7 @@ let actions = {
     info : {color: "green", button: "Send (json) data"},
     request: {color: "red", button: "Request update"},
 }
-    
+
 
 let populate = function() {
     let areas = ['button', 'input'];
@@ -79,7 +79,7 @@ let populate = function() {
 //////////////////// global functions
 function set_status(text, color) {
     $("#connection-status").css("background-color", color).html(text);
-}    
+}
 
 function update_status() {
     let color;
@@ -116,8 +116,8 @@ function cyclic_update() {
 }
 
 cyclic_update();
-            
-        
+
+
 
 function show_connected(url) {
     $("#connection-status").css("background-color", "green");
@@ -211,23 +211,34 @@ function prettyDate() {
 
 // a function to prettify the leases message
 function pretty_leases(records) {
-    let bullets = $(`<ul>`).addClass('leases');
+    records.sort((r1, r2) => r1.valid_from.localeCompare(r2.valid_from));
+    let bullets = $(`<div>`).addClass('records');
     records.forEach(function(lease) {
+        let [datef, timef] = lease.valid_from.split("T");
+        let [dateu, timeu] = lease.valid_until.split("T");
+        let inside = $(`<ul>`)
+            .append($("<li>").html(`From ${datef}`))
+            .append($("<li>").html(`at ${timef}`))
+            .append($("<li>").html(`Until ${dateu}`))
+            .append($("<li>").html(`at ${timeu}`))
+        ;
         bullets.append(
-            $(`<li>`)
-                .html(`${lease.slicename} from ${lease.valid_from} until ${lease.valid_until}`)
-        )
-    })
+            $(`<span>`)
+            .addClass('record')
+            .html(lease.slicename)
+            .tooltip({title: inside, html: true}))
+        })
+    return bullets;
 }
 
 // applicable to nodes and phones
 function pretty_records(records) {
-    records.sort(function(r1, r2) {return r1.id - r2.id;});
+    records.sort((r1, r2) => r1.id - r2.id);
     let bullets = $(`<div>`)
         .addClass('records');
     records.forEach(function(record) {
         let inside = $(`<ul>`);
-        for (let attribute of Object.keys(record).sort()) 
+        for (let attribute of Object.keys(record).sort())
             inside.append($(`<li>`).html(`"${attribute}" : ${JSON.stringify(record[attribute])}`));
         let color_class =
             ((record['available'] == 'ko')
