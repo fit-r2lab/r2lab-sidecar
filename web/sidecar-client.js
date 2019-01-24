@@ -204,9 +204,12 @@ let set_prod_url = function(e) {
     set_url();
 }
 //////////////////// the 3 channels
+let pad2 = (number) => number.toString().padStart(2, 0)
 function prettyDate() {
     let now = new Date();
-    return `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+    return `${pad2(now.getHours())}:`
+    + `${pad2(now.getMinutes())}:`
+    + `${pad2(now.getSeconds())}`;
 }
 
 // a function to prettify the leases message
