@@ -1,15 +1,15 @@
 # this is meant to be installed under /etc/systemd/system
 
 [Unit]
-Description=Sidecar service propagates R2lab testbed status using socketio
+Description=Sidecar service propagates R2lab testbed status using websockets
 
 # also available is the option
-#  -u http://r2lab.inria.fr:999
+#  -u wss://r2lab.inria.fr:999/
 
 [Service]
 WorkingDirectory=/root/r2lab-sidecar
 ExecStartPre=/usr/bin/mkdir -p /var/lib/sidecar
-ExecStart=/bin/bash -c "node sidecar.js"
+ExecStart=/bin/bash -c "python3 sidecar-server.py"
 # make it more robust
 Restart=always
 RestartSec=2
