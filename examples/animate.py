@@ -7,7 +7,7 @@ import datetime
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-from r2lab import R2labSidecar
+from r2lab import (SidecarSyncClient, SidecarPayload)
 
 # in seconds
 default_cycle = 1
@@ -15,7 +15,7 @@ default_runs = 0
 
 # should maybe default to this official one, but mostly it's firewalled
 # default_sidecar_url = "https://r2lab.inria.fr:999/"
-default_sidecar_url = "http://localhost:10000/"
+default_sidecar_url = "ws://localhost:10000/"
 
 node_ids = range(1, 38)
 default_max_nodes_impacted = 10
@@ -48,10 +48,10 @@ nodes_field_possible_values = {
 
 phones_field_possible_values = {
     'wifi_on_off' : [ 'on', 'off' ],
-    'airplane_mode' : [ 'on', 'off'],
+    'airplane_mode' : [ 'on', 'off', 'fail'],
 }
 
-####################    
+####################
 def random_ids(max_nodes_impacted):
     how_many = random.randint(1, max_nodes_impacted)
     return [ random.choice(node_ids) for i in range(how_many)]
@@ -75,7 +75,7 @@ def random_node_status(id, index=0):
     # however the default always expose the full monty
     node_info = { 'id' : id }
     # fill node_info with all known keys
-    node_info.update( { field : random.choice(values) 
+    node_info.update( { field : random.choice(values)
                        for field, values in nodes_field_possible_values.items() })
     # make sure this is mostly consistent
     normalize_status(node_info)
@@ -91,13 +91,11 @@ def random_node_status(id, index=0):
 def random_phone_status(id):
     phone_info = { 'id' : id }
     # fill phone_info with all known keys
-    phone_info.update( { field : random.choice(values) 
+    phone_info.update( { field : random.choice(values)
                        for field, values in phones_field_possible_values.items() })
     return phone_info
 
 # too lazy to get this properly (need to turn off server auth)
-leases_url = "https://faraday.inria.fr:12346/resources/leases";
-leases_file = "LEASES"
 nightly = 'inria_r2lab.nightly'
 other_slice = 'inria_r2lab.tutorial'
 
@@ -156,9 +154,10 @@ def main():
 
     url = args.sidecar_url
     print("Connecting to sidecar at {}".format(url))
-    with R2labSidecar(url) as sidecar:
+    with SidecarSyncClient(url) as sidecar:
 
         counter = 0
+        payload = SidecarPayload()
         while True:
             news_infos = [ random_node_status(id, index)
                            for index, id in enumerate(random_ids(args.max_nodes_impacted)) ]
@@ -167,18 +166,21 @@ def main():
                       .format(counter, len(news_infos),
                               [ (info['id'], len(info)-1) for info in news_infos]))
                 print(news_infos[0])
-            sidecar.emit('info:nodes', json.dumps(news_infos), None)
-    
+            payload.fill_from_infos(news_infos, category='nodes')
+            sidecar.send_payload(payload)
+
             # only one phone
             if counter % args.phone_cycle == 0:
                 phone_infos = [ random_phone_status(id) for id in [1]]
                 if args.verbose:
                     print("phone: emitting {}".format(phone_infos[0]))
-                sidecar.emit('info:phones', json.dumps(phone_infos), None)
-    
+                payload.fill_from_infos(phone_infos, 'phones')
+                sidecar.send_payload(payload)
+
             leases = get_leases()
             if leases:
-                sidecar.emit('info:leases', json.dumps(leases), None)
+                payload.fill_from_infos(leases, 'leases')
+                sidecar.send_payload(payload)
             counter += 1
             if args.runs and counter >= args.runs:
                 break

@@ -17,10 +17,8 @@ scope = [(x, f"{x:02d}") for x in range(1, 38)]
 
 default_images_dir = "../../r2lab.inria.fr-raw/node-images"
 
-import r2lab
-
-from r2lab.sidecar import (
-    default_sidecar_url, R2labSidecar)
+from r2lab import (
+    default_sidecar_url, SidecarSyncClient, SidecarPayload)
 
 def images_infos(node_images):
 
@@ -28,7 +26,8 @@ def images_infos(node_images):
     root = Path(node_images)
     for index, name in scope:
         pictures = root.glob(f"*/fit{name}*")
-        paths = [str(picture.relative_to(root)) for picture in pictures]
+        paths = [str(picture.relative_to(root))
+                 for picture in pictures]
         print(f"{index} -> pictures")
         result.append({"id": index,
                        "images": paths})
@@ -36,21 +35,25 @@ def images_infos(node_images):
 
 
 def send_infos(infos, sidecar_url):
-    proxy = R2labSidecar(sidecar_url)
-    channel = proxy.channel_data('nodes')
+    print(f"connecting to {sidecar_url}")
+    with SidecarSyncClient(sidecar_url) as sidecar:
+        payload = SidecarPayload()
+        payload.fill_from_infos(infos, category='nodes')
+        sidecar.send_payload(payload)
 
-    print("connecting to channel {} @ {}".format(channel, sidecar_url))
-    proxy.emit(channel, json.dumps(infos), None)
 
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-u", "--sidecar-url", dest="sidecar_url",
-                        default=default_sidecar_url,
-                        help="url for the sidecar server")
-    parser.add_argument("-v", "--verbose", action='store_true', default=False)
-    parser.add_argument("-d", "--images-dir", dest='node_images',
-                        default=default_images_dir,
-                        help="location of the node-images local dir")
+    parser.add_argument(
+        "-u", "--sidecar-url", dest="sidecar_url",
+        default=default_sidecar_url,
+        help="url for the sidecar server")
+    parser.add_argument(
+        "-v", "--verbose", action='store_true', default=False)
+    parser.add_argument(
+        "-d", "--images-dir", dest='node_images',
+        default=default_images_dir,
+        help="location of the node-images local dir")
     args = parser.parse_args()
 
     infos = images_infos(args.node_images)
