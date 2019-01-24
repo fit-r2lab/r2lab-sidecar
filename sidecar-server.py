@@ -66,9 +66,16 @@ import sys
 import json
 from pathlib import Path
 import logging as logger
-
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import asyncio
+
 import websockets
+
+
+default_sidecar_url = "wss://r2lab.inria.fr:999/"
+devel_sidecar_url = "ws://localhost:10000/"
+default_ssl_cert = "/etc/pki/tls/certs/r2lab_inria_fr.crt"
+default_ssl_key = "/etc/pki/tls/private/r2lab.inria.fr.key"
 
 
 logger.basicConfig(
@@ -95,14 +102,15 @@ class Category:
     # when /var/lib is not writable for us
     def _candidate_filenames(self):
         return [
+            # tmp
+            f"/tmp/{self.name}.json",
+            f"/var/lib/sidecar/{self.name}.json",
             f"/var/lib/sidecar/{self.name}.json",
             f"./{self.name}.json",
         ]
 
     def __repr__(self):
-        result = f"category:{self.name}"
-        result += f" with {len(self.contents)} items"
-        return result
+        return f"{len(self.contents)} {self.name}"
 
     def rehash(self):
         if self.persistent:
@@ -160,7 +168,6 @@ class Category:
         # and that overrides contents
         if not self.persistent:
             self.contents = infos
-            self.store()
         else:
             for new_info in infos:
                 if 'id' not in new_info:
@@ -200,10 +207,11 @@ class SidecarServer:
         """
         devel-oriented dump of current status
         """
-        logger.info(f"--- {message}")
-        logger.info(f"SidecarServer with {len(self.clients)} clients")
+        line = f"--- {message} "
+        line += f"SidecarServer with {len(self.clients)} clients "
         for category in self.hash_by_category.values():
-            logger.info(f"{category}")
+            line += f"{category} "
+        logger.info(line)
 
     def register(self, websocket):
         """
@@ -245,7 +253,10 @@ class SidecarServer:
         umbrella = dict(category=category, action="info",
                         message=data)
         for websocket in self.clients:
-            await websocket.send(json.dumps(umbrella))
+            try:
+                await websocket.send(json.dumps(umbrella))
+            except websockets.exceptions.ConnectionClosed:
+                logger.info("Client has vanished - ignoring")
 
     async def react_on(self, umbrella, origin):
         # tmp:
@@ -260,7 +271,6 @@ class SidecarServer:
             if not self.check_umbrella(umbrella, True):
                 return
             self.hash_by_category[category].update(umbrella['message'])
-            self.hash_by_category[category].store()
             await self.broadcast(umbrella['category'], origin)
 
     def websockets_closure(self):
@@ -279,13 +289,43 @@ class SidecarServer:
         return websockets_loop
 
 
-    def run(self):
+    def run(self, url, cert, key):
+        uri = websockets.uri.parse_uri(url)
+        # ignore 2 fields resource_name and user_info
+        secure, hostname, port, *_ = uri
+
+        ssl_context = None
+        if secure:
+            import ssl
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ssl_context.load_cert_chain(cert, key)
+
         loop = asyncio.get_event_loop()
-        task = websockets.serve(self.websockets_closure(), 'localhost', 10000)
+        task = websockets.serve(self.websockets_closure(),
+                                hostname, port, ssl=ssl_context)
         loop.run_until_complete(task)
         loop.run_forever()
 
+    def main(self):
+        parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+        parser.add_argument(
+            "-u", "--sidecar-url", default=default_sidecar_url,
+            help="Typically a ws:// or wss:// url")
+        parser.add_argument(
+            "-c", "--cert", default=default_ssl_cert,
+            help="SSL certificate (wss only)")
+        parser.add_argument(
+            "-k", "--key", default=default_ssl_key,
+            help="Private key for SSL certificate (wss only)")
+        parser.add_argument(
+            "-d", "--devel", action='store_true', default=False,
+            help=f"shorthand for --url {devel_sidecar_url}")
+        args = parser.parse_args()
+
+        url = devel_sidecar_url if args.devel else args.sidecar_url
+
+        self.run(url, args.cert, args.key)
 
 
 if __name__ == '__main__':
-    SidecarServer().run()
+    SidecarServer().main()
