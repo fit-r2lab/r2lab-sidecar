@@ -5,17 +5,13 @@
     yum install git
     cd /root
     git clone https://github.com/fit-r2lab/r2lab-sidecar.git
-    
-## node.js
 
-### r2lab (fedora)
-    yum install -y nodejs npm
-    
-## install nodejs dependencies
- 
-    cd /root/r2lab-sidecar
-    npm install
+## python
 
+Requires python3 and websokets
+
+    pip3 install websockets
+    
 ## install systemd service file
 
     cd /root/r2lab-sidecar
@@ -33,10 +29,8 @@ NOTES
   used, of course, only the protocol and port numbers matter in the
   URL.
     
-* when running a devel server: as of Jan 2017 : we use 999 (over
-https) and not 443 any longer as the port number for sidecar, as
-r2lab.inria.fr runs on https In any case you need to run your devel
-instance of `sidecar.js` like as follows, option `-l` allows to log in
-a local file instead of `/var/log/sidecar.log`:
+* Ports
+  * default prod. mode is on port 999 (wss://r2lab.inria.fr:999/)
+  * default devel mode (with -d/--devel) is on 10000 (ws://localhost:10000)
 
-    $ sudo sidecar.js -l
+    $ sidecar-server.py --devel

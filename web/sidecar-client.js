@@ -1,12 +1,9 @@
 // a sidecar client for the new websockets implementation
 "use strict";
 
-//let default_url = "http://r2lab.inria.fr:999/";
 let devel_url = "ws://localhost:10000/";
 let prod_url = "wss://r2lab.inria.fr:999/";
 let default_url = prod_url;
-// tmp
-    default_url = devel_url;
 
 let websocket = undefined;
 
