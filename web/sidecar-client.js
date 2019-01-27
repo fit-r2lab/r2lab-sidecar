@@ -213,21 +213,31 @@ function prettyDate() {
 function pretty_leases(records) {
     records.sort((r1, r2) => r1.valid_from.localeCompare(r2.valid_from));
     let bullets = $(`<div>`).addClass('records');
+    console.log(records);
     records.forEach(function(lease) {
-        let [datef, timef] = lease.valid_from.split("T");
-        let [dateu, timeu] = lease.valid_until.split("T");
-        let inside = $(`<ul>`)
-            .append($("<li>").html(`From ${datef}`))
-            .append($("<li>").html(`at ${timef}`))
-            .append($("<li>").html(`Until ${dateu}`))
-            .append($("<li>").html(`at ${timeu}`))
-        ;
-        bullets.append(
-            $(`<span>`)
-            .addClass('record')
-            .html(lease.slicename)
-            .tooltip({title: inside, html: true}))
-        })
+        try {
+            let [datef, timef] = lease.valid_from.split("T");
+            let [dateu, timeu] = lease.valid_until.split("T");
+            let inside = $(`<ul>`)
+                .append($("<li>").html(`From ${datef}`))
+                .append($("<li>").html(`at ${timef}`))
+                .append($("<li>").html(`Until ${dateu}`))
+                .append($("<li>").html(`at ${timeu}`))
+            ;
+            bullets.append(
+                $(`<span>`)
+                .addClass('record')
+                .html(lease.slicename)
+                .tooltip({title: inside, html: true}))
+        } catch (e) {
+            bullets.append(
+                $(`<span>`)
+                .addClass('record')
+                .addClass('red')
+                .html(`Unexpected lease ${lease}`)
+            )
+        }
+    })
     return bullets;
 }
 
