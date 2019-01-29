@@ -3,7 +3,7 @@
 
 let devel_url = "ws://localhost:10000/";
 let prod_url = "wss://r2lab.inria.fr:999/";
-let default_url = prod_url;
+let default_url = devel_url;
 
 let websocket = undefined;
 
@@ -24,26 +24,38 @@ let categories = {
 }
 
 let actions = {
-    info : {color: "green", button: "Send (json) data"},
     request: {color: "red", button: "Request update"},
+    info : {color: "green", button: "Send (json) data"},
 }
 
 
 let populate = function() {
+    $("input#url")
+        .keypress(function(ev) {
+            var keycode = (ev.keyCode ? ev.keyCode : ev.which);
+            if (keycode == '13')
+                set_url();
+        });
     let areas = ['button', 'input'];
+    let anchor = $("#separator-controls");
     for (let category in categories) {
-        // the label are - spans 2 lines of the grid
-        $("#separator-controls").after(
-            $(`<div>`, {id: `${category}-label`,
-                        style: `grid-area:${category}-label`,
-                       }).html(`${category}`));
+        // insert in the right order, for tabindexes to work as expected
+        let newdiv =
+            $(`<div>`,
+                {id: `${category}-label`,
+                 style: `grid-area:${category}-label`})
+            .html(`${category}`);
+        anchor.after(newdiv);
+        anchor = newdiv;
         // the 4 grid items for input / button and info / request
         for (let action in actions) {
             for (let area of areas) {
-                $("#separator-controls").after(
-                    $("<div>", {id: `${category}-${action}-${area}`,
-                                style: `grid-area:${category}-${action}-${area}`,
-                               }));
+                newdiv =
+                    $("<div>",
+                        {id: `${category}-${action}-${area}`,
+                         style: `grid-area:${category}-${action}-${area}`});
+                anchor.after(newdiv);
+                anchor = newdiv;
             }
             // create button
             $(`#${category}-${action}-button`).append(
@@ -54,10 +66,20 @@ let populate = function() {
                 send(category, action);
             });
         }
-        $(`#${category}-info-input`).append(
-            $(`<input />`).val(`${categories[category].def_info}`));
         $(`#${category}-request-input`).append(
-            $(`<input />`).val(`${categories[category].def_request}`));
+            $(`<input />`)
+            .val(`${categories[category].def_request}`)
+        );
+        $(`#${category}-info-input`).append(
+            $(`<input />`)
+            .val(`${categories[category].def_info}`)
+            .keypress(function (ev) {
+                var keycode = (ev.keyCode ? ev.keyCode : ev.which);
+                if (keycode == '13')
+                    send(category, 'info')
+            })
+        );
+
         // contents area
         $(`#top-contents`).append(
             $(`<div>`,
@@ -69,6 +91,7 @@ let populate = function() {
                     $(`<ul>`,
                       {id: `ul-${category}`, class: "contents"}))
         );
+        $("button").attr('tabindex', -1);
     }
 }
 

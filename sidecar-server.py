@@ -54,10 +54,8 @@ Features:
 
 # Forwarding
 
-As the focal point, the server:
-* absorbs all 'request' messages,
-  it simply reacts by sending the corresponding
-
+Once the server has properly reacted on an incoming message,
+it is always broadcasted to all current clients.
 """
 
 # pylint:disable=w1203
@@ -68,6 +66,7 @@ from pathlib import Path
 import logging as logger
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import asyncio
+from collections import defaultdict
 
 import websockets
 
@@ -198,32 +197,44 @@ class SidecarServer:
     """
 
     def __init__(self):
-        self.hash_by_category = {category.name: category for category in CATEGORIES}
+        self.hash_by_category = {category.name: category
+                                 for category in CATEGORIES}
         for category in self.hash_by_category.values():
             category.load()
         self.clients = set()
+        self.clients_by_host = defaultdict(set)
 
-    def dump(self, message):
+    def _dump(self, message):
         """
         devel-oriented dump of current status
         """
         line = f"--- {message} "
-        line += f"SidecarServer with {len(self.clients)} clients "
         for category in self.hash_by_category.values():
             line += f"{category} "
-        logger.info(line)
+        line += f"SidecarServer - {len(self.clients)} clients "
+        line += f"from - {len(self.clients_by_host)} hosts: "
+        line += " ".join(self.clients_by_host.keys())
+        return line
+
+    def dump(self, message):
+        logger.info(self._dump(message))
 
     def register(self, websocket):
         """
         keep track of connected clients
         """
         self.clients.add(websocket)
+        self.clients_by_host[websocket.host].add(websocket)
 
     def unregister(self, websocket):
         """
         keep track of connected clients
         """
         self.clients.remove(websocket)
+        host_set = self.clients_by_host[websocket.host]
+        host_set.remove(websocket)
+        if not host_set:
+            del self.clients_by_host[websocket.host]
 
     def check_umbrella(self, umbrella, check_infos):
         """
@@ -243,35 +254,46 @@ class SidecarServer:
         if check_infos:
             message = umbrella['message']
             if not isinstance(message, list):
-                logger.error(f"Unexpected message of type {type(message).__name__} - should be a list")
+                logger.error(f"Unexpected message of type "
+                             f"{type(message).__name__} - should be a list")
                 return False
         return True
 
-    async def broadcast(self, category, origin):
-        logger.info(f"broadcasting on {len(self.clients)} clients")
-        data = self.hash_by_category[category].contents
-        umbrella = dict(category=category, action="info",
-                        message=data)
+    async def broadcast(self, umbrella, origin):
+        logger.info(self._dump(
+            f"broadcasting {umbrella['category']} x {umbrella['action']}"))
         for websocket in self.clients:
             try:
                 await websocket.send(json.dumps(umbrella))
             except websockets.exceptions.ConnectionClosed:
                 logger.info("Client has vanished - ignoring")
 
+    async def broadcast_category(self, category, origin):
+        data = self.hash_by_category[category].contents
+        umbrella = dict(category=category, action="info",
+                        message=data)
+        await self.broadcast(umbrella, origin)
+
     async def react_on(self, umbrella, origin):
-        # tmp:
+        # origin is the client that was the original sender
         self.dump(f"entering react_on with {umbrella}")
         action = umbrella['action']
         category = umbrella['category']
         if action == 'request':
             if not self.check_umbrella(umbrella, False):
                 return
-            await self.broadcast(umbrella['category'], origin)
+            # broadcast current known contents
+            await self.broadcast_category(umbrella['category'], origin)
+            # broadcast request as well
+            # typically useful for monitorleases
+            # xxx might avoid that on non-persistent categories
+            await self.broadcast(umbrella, origin)
         elif action == 'info':
             if not self.check_umbrella(umbrella, True):
                 return
+            # xxx - would make A LOT OF SENSE to compute differences here
             self.hash_by_category[category].update(umbrella['message'])
-            await self.broadcast(umbrella['category'], origin)
+            await self.broadcast_category(umbrella['category'], origin)
 
     def websockets_closure(self):
         self.dump(f"mainloop")
