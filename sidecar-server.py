@@ -227,12 +227,13 @@ class SidecarServer:
         """
         devel-oriented dump of current status
         """
-        line = f"--- {message} | "
-        for category in self.hash_by_category.values():
-            line += f"{category} "
-        line += f"SidecarServer | {len(self.clients)} clients "
-        line += f"from - {len(self.clients_by_host)} hosts: "
-        line += " ".join(self.clients_by_host.keys())
+        line = "["
+        line += (', '.join(f"{category}" 
+                 for category in self.hash_by_category.values()))
+        line += f"] {message} | "
+        line += f"{len(self.clients)} clients "
+        line += f"from: {len(self.clients_by_host)} hosts - "
+        line += (', '.join(f"{add} [{len(clients)}]" for (add, clients) in self.clients_by_host.items()))
         return line
 
     def dump(self, message):
@@ -246,7 +247,7 @@ class SidecarServer:
         self.clients.add(websocket)
         client_address, *_ = websocket.remote_address
         self.clients_by_host[client_address].add(websocket)
-        self.dump("Registered one new client")
+        self.dump("Register new client")
 
     def unregister(self, websocket):
         """
@@ -254,7 +255,7 @@ class SidecarServer:
         """
         if websocket in self.clients:
             self.clients.remove(websocket)
-            self.dump("Unregistered one client")
+            self.dump("Unregister client")
         else:
             logger.error(f"Unregistering unknown client !")
         host_set = self.clients_by_host[websocket.host]
@@ -289,7 +290,7 @@ class SidecarServer:
     
     async def broadcast(self, umbrella, origin):
         logger.info(self._dump(
-            f"broadcasting {umbrella['category']} x {umbrella['action']}"))
+            f"Broadcast {umbrella['category']},{umbrella['action']}"))
         for websocket in self.clients:
             try:
                 await websocket.send(json.dumps(umbrella))
