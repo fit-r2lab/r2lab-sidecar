@@ -166,22 +166,40 @@ class Category:
         # non-persistent categories receive the whole list each time
         # and that overrides contents
         if not self.persistent:
+            # xxx it feels like in some cases, at least when a lease is set on the UI
+            # there may be a need to merge here too...
             self.contents = infos
+            return self.contents
+            # xxx also this might deserve a save()
         else:
-            for new_info in infos:
-                if 'id' not in new_info:
-                    logger.error(f"info object lacks id {new_info}")
+            result = []
+            for incoming_info in infos:
+                if 'id' not in incoming_info:
+                    logger.error(f"info object lacks id {incoming_info}")
+                    continue
+                id = incoming_info['id']
+                if id not in self.hash_by_id:
+                    # first time we see this id
+                    self.contents.append(incoming_info)
+                    self.hash_by_id[id] = incoming_info
+                    result.append(incoming_info)
                 else:
-                    oid = new_info['id']
-                    if oid not in self.hash_by_id:
-                        info = dict(id=oid)
-                        self.contents.append(info)
-                        self.hash_by_id[id] = info
+                    has_changed = False
+                    # make sure there's something new..                    
+                    old_info = self.hash_by_id[id]
+                    for k, v in incoming_info.items():
+                        if k not in old_info:
+                            has_changed = True
+                        elif old_info[k] != v:
+                            has_changed = True
+                    if has_changed:
+                        old_info.update(incoming_info)
+                        result.append(old_info)
                     else:
-                        info = self.hash_by_id[oid]
-                    info.update(new_info)
-                    self.rehash()
-            self.store()
+                        logger.debug(f"no change on id={id}")
+            if result:
+                self.store()
+            return result
 
 
 CATEGORIES = [
@@ -204,14 +222,15 @@ class SidecarServer:
         self.clients = set()
         self.clients_by_host = defaultdict(set)
 
+    
     def _dump(self, message):
         """
         devel-oriented dump of current status
         """
-        line = f"--- {message} "
+        line = f"--- {message} | "
         for category in self.hash_by_category.values():
             line += f"{category} "
-        line += f"SidecarServer - {len(self.clients)} clients "
+        line += f"SidecarServer | {len(self.clients)} clients "
         line += f"from - {len(self.clients_by_host)} hosts: "
         line += " ".join(self.clients_by_host.keys())
         return line
@@ -219,23 +238,31 @@ class SidecarServer:
     def dump(self, message):
         logger.info(self._dump(message))
 
+    
     def register(self, websocket):
         """
         keep track of connected clients
         """
         self.clients.add(websocket)
-        self.clients_by_host[websocket.host].add(websocket)
+        client_address, *_ = websocket.remote_address
+        self.clients_by_host[client_address].add(websocket)
+        self.dump("Registered one new client")
 
     def unregister(self, websocket):
         """
         keep track of connected clients
         """
-        self.clients.remove(websocket)
+        if websocket in self.clients:
+            self.clients.remove(websocket)
+            self.dump("Unregistered one client")
+        else:
+            logger.error(f"Unregistering unknown client !")
         host_set = self.clients_by_host[websocket.host]
         host_set.remove(websocket)
         if not host_set:
             del self.clients_by_host[websocket.host]
 
+    
     def check_umbrella(self, umbrella, check_infos):
         """
         Check payload once it's been json-unmarshalled
@@ -259,6 +286,7 @@ class SidecarServer:
                 return False
         return True
 
+    
     async def broadcast(self, umbrella, origin):
         logger.info(self._dump(
             f"broadcasting {umbrella['category']} x {umbrella['action']}"))
@@ -276,7 +304,7 @@ class SidecarServer:
 
     async def react_on(self, umbrella, origin):
         # origin is the client that was the original sender
-        self.dump(f"entering react_on with {umbrella}")
+        # self.dump(f"entering react_on with {umbrella}")
         action = umbrella['action']
         category = umbrella['category']
         if action == 'request':
@@ -291,12 +319,14 @@ class SidecarServer:
         elif action == 'info':
             if not self.check_umbrella(umbrella, True):
                 return
-            # xxx - would make A LOT OF SENSE to compute differences here
-            self.hash_by_category[category].update(umbrella['message'])
-            await self.broadcast_category(umbrella['category'], origin)
+            news = self.hash_by_category[category].update(umbrella['message'])
+            if news:
+                # don't allocate a new umbrella object, we don't need this one anymore
+                umbrella['infos'] = news
+                await self.broadcast(umbrella, origin)
 
     def websockets_closure(self):
-        self.dump(f"mainloop")
+        self.dump(f"Sidecar server mainloop")
         async def websockets_loop(websocket, path):
             self.register(websocket)
             try:
