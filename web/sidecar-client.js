@@ -69,6 +69,11 @@ let populate = function() {
         $(`#${category}-request-input`).append(
             $(`<input />`)
             .val(`${categories[category].def_request}`)
+            .keypress(function (ev) {
+                var keycode = (ev.keyCode ? ev.keyCode : ev.which);
+                if (keycode == '13')
+                    send(category, 'request')
+            })
         );
         $(`#${category}-info-input`).append(
             $(`<input />`)
