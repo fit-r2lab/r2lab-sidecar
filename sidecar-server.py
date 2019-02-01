@@ -294,8 +294,9 @@ class SidecarServer:
 
 
     async def broadcast(self, umbrella, _origin):
-        self.dump(
-            f"Broadcast {umbrella['category']},{umbrella['action']}",
+        if DEBUG:
+            self.dump(
+                f"Broadcast {umbrella['category']},{umbrella['action']}",
             payload=umbrella)
         for websocket in self.clients:
             try:
@@ -312,13 +313,13 @@ class SidecarServer:
 
     async def react_on(self, umbrella, origin):
         # origin is the client that was the original sender
-        # self.dump(f"entering react_on with {umbrella}")
         action = umbrella['action']
         category = umbrella['category']
         if action == 'request':
             if not self.check_umbrella(umbrella, False):
                 return
-            self.dump(f"Reacting on 'request' on {category}")
+            if DEBUG:
+                self.dump(f"Reacting on 'request' on {category}")
             # broadcast current known contents
             await self.broadcast_category(umbrella['category'], origin)
             # broadcast request as well
@@ -328,8 +329,9 @@ class SidecarServer:
         elif action == 'info':
             if not self.check_umbrella(umbrella, True):
                 return
-            self.dump(f"Reacting on 'info' on {category}",
-                      payload=umbrella)
+            if DEBUG:
+                self.dump(f"Reacting on 'info' on {category}",
+                          payload=umbrella)
             news = (self.hash_by_category[category]
                     .update_and_find_news(umbrella['message']))
             if DEBUG:
