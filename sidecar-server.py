@@ -159,11 +159,12 @@ class Category:
         logger.error(f"could not save category {self}")
         return False
 
-    def update(self, infos):
+    def update_and_find_news(self, infos):
         """
         triples is a list of triples of the form
         {'id': something, 'somekey': 'somevalue', 'anotherkey': 'anotherval'}
-        []
+
+        returns a list of news that should be broadcasted
         """
         # non-persistent categories receive the whole list each time
         # and that overrides contents
@@ -336,11 +337,13 @@ class SidecarServer:
                 return
             self.dump(f"Reacting on 'info' on {category}",
                       payload=umbrella)
-            news = self.hash_by_category[category].update(umbrella['message'])
+            news = (self.hash_by_category[category]
+                    .update_and_find_news(umbrella['message']))
             self.dump(f"\n    news={news}")
             if news:
                 # don't allocate a new umbrella object, we don't need this one anymore
                 umbrella['message'] = news
+                umbrella['incremental'] = True
                 await self.broadcast(umbrella, origin)
 
     def websockets_closure(self):
