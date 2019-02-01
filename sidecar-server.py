@@ -58,7 +58,7 @@ Once the server has properly reacted on an incoming message,
 it is always broadcasted to all current clients.
 """
 
-# pylint:disable=w1203
+# pylint:disable=c0111, w1203, w0603
 
 import sys
 import json
@@ -71,10 +71,10 @@ from collections import defaultdict
 import websockets
 
 
-default_sidecar_url = "wss://r2lab.inria.fr:999/"
-devel_sidecar_url = "ws://localhost:10000/"
-default_ssl_cert = "/etc/pki/tls/certs/r2lab_inria_fr.crt"
-default_ssl_key = "/etc/pki/tls/private/r2lab.inria.fr.key"
+DEFAULT_SIDECAR_URL = "wss://r2lab.inria.fr:999/"
+DEVEL_SIDECAR_URL = "ws://localhost:10000/"
+DEFAULT_SSL_CERT = "/etc/pki/tls/certs/r2lab_inria_fr.crt"
+DEFAULT_SSL_KEY = "/etc/pki/tls/private/r2lab.inria.fr.key"
 
 DEBUG = False
 
@@ -169,40 +169,36 @@ class Category:
         # non-persistent categories receive the whole list each time
         # and that overrides contents
         if not self.persistent:
-            # xxx it feels like in some cases, at least when a lease is set on the UI
-            # there may be a need to merge here too...
             self.contents = infos
             return self.contents
-            # xxx also this might deserve a save()
-        else:
-            result = []
-            for incoming_info in infos:
-                if 'id' not in incoming_info:
-                    logger.error(f"info object lacks id {incoming_info}")
-                    continue
-                id = incoming_info['id']
-                if id not in self.hash_by_id:
-                    # first time we see this id
-                    self.contents.append(incoming_info)
-                    self.hash_by_id[id] = incoming_info
-                    result.append(incoming_info)
+        result = []
+        for incoming_info in infos:
+            if 'id' not in incoming_info:
+                logger.error(f"info object lacks id {incoming_info}")
+                continue
+            id = incoming_info['id']
+            if id not in self.hash_by_id:
+                # first time we see this id
+                self.contents.append(incoming_info)
+                self.hash_by_id[id] = incoming_info
+                result.append(incoming_info)
+            else:
+                has_changed = False
+                # make sure there's something new..
+                old_info = self.hash_by_id[id]
+                for key, v in incoming_info.items():
+                    if key not in old_info:
+                        has_changed = True
+                    elif old_info[key] != v:
+                        has_changed = True
+                if has_changed:
+                    old_info.update(incoming_info)
+                    result.append(old_info)
                 else:
-                    has_changed = False
-                    # make sure there's something new..
-                    old_info = self.hash_by_id[id]
-                    for k, v in incoming_info.items():
-                        if k not in old_info:
-                            has_changed = True
-                        elif old_info[k] != v:
-                            has_changed = True
-                    if has_changed:
-                        old_info.update(incoming_info)
-                        result.append(old_info)
-                    else:
-                        logger.debug(f"no change on id={id}")
-            if result:
-                self.store()
-            return result
+                    logger.debug(f"no change on id={id}")
+        if result:
+            self.store()
+        return result
 
 
 CATEGORIES = [
@@ -269,9 +265,6 @@ class SidecarServer:
             if not host_set:
                 del self.clients_by_host[client_address]
             self.dump("Unregistered client")
-            # temp
-            for i in range(3):
-                logger.info('---')
         else:
             logger.error(f"Unregistering unknown client !")
 
@@ -300,7 +293,7 @@ class SidecarServer:
         return True
 
 
-    async def broadcast(self, umbrella, origin):
+    async def broadcast(self, umbrella, _origin):
         self.dump(
             f"Broadcast {umbrella['category']},{umbrella['action']}",
             payload=umbrella)
@@ -330,7 +323,7 @@ class SidecarServer:
             await self.broadcast_category(umbrella['category'], origin)
             # broadcast request as well
             # typically useful for monitorleases
-            # xxx might avoid that on non-persistent categories
+            # need to avoid that on non-persistent categories ?
             await self.broadcast(umbrella, origin)
         elif action == 'info':
             if not self.check_umbrella(umbrella, True):
@@ -339,7 +332,8 @@ class SidecarServer:
                       payload=umbrella)
             news = (self.hash_by_category[category]
                     .update_and_find_news(umbrella['message']))
-            self.dump(f"\n    news={news}")
+            if DEBUG:
+                self.dump(f"\n    news={news}")
             if news:
                 # don't allocate a new umbrella object, we don't need this one anymore
                 umbrella['message'] = news
@@ -347,8 +341,8 @@ class SidecarServer:
                 await self.broadcast(umbrella, origin)
 
     def websockets_closure(self):
-        self.dump(f"Sidecar server mainloop")
-        async def websockets_loop(websocket, path):
+
+        async def websockets_loop(websocket, _path):
             self.register(websocket)
             try:
                 async for message in websocket:
@@ -362,7 +356,13 @@ class SidecarServer:
         return websockets_loop
 
 
-    def run(self, url, cert, key):
+    async def monitor(self, period):
+        while True:
+            self.dump("cyclic status")
+            await asyncio.sleep(period)
+
+
+    async def serve(self, url, cert, key):
         uri = websockets.uri.parse_uri(url)
         # ignore 2 fields resource_name and user_info
         secure, hostname, port, *_ = uri
@@ -373,31 +373,45 @@ class SidecarServer:
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ssl_context.load_cert_chain(cert, key)
 
+        await websockets.serve(
+            self.websockets_closure(),
+            hostname, port, ssl=ssl_context)
+
+
+    def run(self, url, cert, key, period):
+        self.dump(f"Sidecar server - mainloop")
         loop = asyncio.get_event_loop()
-        task = websockets.serve(self.websockets_closure(),
-                                hostname, port, ssl=ssl_context)
-        loop.run_until_complete(task)
+        loop.run_until_complete(
+            asyncio.gather(self.serve(url, cert, key),
+                           self.monitor(period)))
         loop.run_forever()
 
     def main(self):
         parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
         parser.add_argument(
-            "-u", "--sidecar-url", default=default_sidecar_url,
+            "-u", "--sidecar-url", default=DEFAULT_SIDECAR_URL,
             help="Typically a ws:// or wss:// url")
         parser.add_argument(
-            "-c", "--cert", default=default_ssl_cert,
+            "-c", "--cert", default=DEFAULT_SSL_CERT,
             help="SSL certificate (wss only)")
         parser.add_argument(
-            "-k", "--key", default=default_ssl_key,
+            "-k", "--key", default=DEFAULT_SSL_KEY,
             help="Private key for SSL certificate (wss only)")
         parser.add_argument(
             "-d", "--devel", action='store_true', default=False,
-            help=f"shorthand for --url {devel_sidecar_url}")
+            help=f"shorthand for --url {DEVEL_SIDECAR_URL}")
+        parser.add_argument(
+            "-p", "--period", default=15,
+            help="monitoring period in seconds"
+        )
         args = parser.parse_args()
 
-        url = devel_sidecar_url if args.devel else args.sidecar_url
+        url = DEVEL_SIDECAR_URL if args.devel else args.sidecar_url
+        if args.devel:
+            global DEBUG
+            DEBUG = True
 
-        self.run(url, args.cert, args.key)
+        self.run(url, args.cert, args.key, args.period)
 
 
 if __name__ == '__main__':
