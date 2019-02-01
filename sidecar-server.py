@@ -76,6 +76,7 @@ devel_sidecar_url = "ws://localhost:10000/"
 default_ssl_cert = "/etc/pki/tls/certs/r2lab_inria_fr.crt"
 default_ssl_key = "/etc/pki/tls/private/r2lab.inria.fr.key"
 
+DEBUG = False
 
 logger.basicConfig(
     stream=sys.stdout,
@@ -113,7 +114,8 @@ class Category:
 
     def rehash(self):
         if self.persistent:
-            self.hash_by_id = {info['id']: info for info in self.contents}
+            self.hash_by_id = {info['id']: info
+                               for info in self.contents}
 
     def load(self):
         """
@@ -131,7 +133,7 @@ class Category:
                     return
             except IOError:
                 logger.warning(f"category {self.name}"
-                                f" could not open {path}")
+                               f" could not open {path}")
         # we've failed
         self.contents = []
 
@@ -185,7 +187,7 @@ class Category:
                     result.append(incoming_info)
                 else:
                     has_changed = False
-                    # make sure there's something new..                    
+                    # make sure there's something new..
                     old_info = self.hash_by_id[id]
                     for k, v in incoming_info.items():
                         if k not in old_info:
@@ -220,26 +222,31 @@ class SidecarServer:
         for category in self.hash_by_category.values():
             category.load()
         self.clients = set()
+        # this is not operational, just for more meaningful
+        # accounting of number of clients per hostname
         self.clients_by_host = defaultdict(set)
 
-    
-    def _dump(self, message):
+
+    def _dump(self, message, payload=None):
         """
         devel-oriented dump of current status
         """
         line = "["
-        line += (', '.join(f"{category}" 
+        line += (', '.join(f"{category}"
                  for category in self.hash_by_category.values()))
         line += f"] {message} | "
         line += f"{len(self.clients)} clients "
         line += f"from: {len(self.clients_by_host)} hosts - "
-        line += (', '.join(f"{add} [{len(clients)}]" for (add, clients) in self.clients_by_host.items()))
+        line += (', '.join(f"{add} [{len(clients)}]"
+                           for (add, clients) in self.clients_by_host.items()))
+        if DEBUG and payload:
+            line += f"\n   payload={payload}"
         return line
 
-    def dump(self, message):
-        logger.info(self._dump(message))
+    def dump(self, message, payload=None):
+        logger.info(self._dump(message, payload))
 
-    
+
     def register(self, websocket):
         """
         keep track of connected clients
@@ -247,7 +254,7 @@ class SidecarServer:
         self.clients.add(websocket)
         client_address, *_ = websocket.remote_address
         self.clients_by_host[client_address].add(websocket)
-        self.dump("Register new client")
+        self.dump("Registered new client")
 
     def unregister(self, websocket):
         """
@@ -255,15 +262,19 @@ class SidecarServer:
         """
         if websocket in self.clients:
             self.clients.remove(websocket)
-            self.dump("Unregister client")
+            client_address, *_ = websocket.remote_address
+            host_set = self.clients_by_host[client_address]
+            host_set.remove(websocket)
+            if not host_set:
+                del self.clients_by_host[client_address]
+            self.dump("Unregistered client")
+            # temp
+            for i in range(3):
+                logger.info('---')
         else:
             logger.error(f"Unregistering unknown client !")
-        host_set = self.clients_by_host[websocket.host]
-        host_set.remove(websocket)
-        if not host_set:
-            del self.clients_by_host[websocket.host]
 
-    
+
     def check_umbrella(self, umbrella, check_infos):
         """
         Check payload once it's been json-unmarshalled
@@ -287,10 +298,11 @@ class SidecarServer:
                 return False
         return True
 
-    
+
     async def broadcast(self, umbrella, origin):
-        logger.info(self._dump(
-            f"Broadcast {umbrella['category']},{umbrella['action']}"))
+        self.dump(
+            f"Broadcast {umbrella['category']},{umbrella['action']}",
+            payload=umbrella)
         for websocket in self.clients:
             try:
                 await websocket.send(json.dumps(umbrella))
@@ -303,6 +315,7 @@ class SidecarServer:
                         message=data)
         await self.broadcast(umbrella, origin)
 
+
     async def react_on(self, umbrella, origin):
         # origin is the client that was the original sender
         # self.dump(f"entering react_on with {umbrella}")
@@ -311,6 +324,7 @@ class SidecarServer:
         if action == 'request':
             if not self.check_umbrella(umbrella, False):
                 return
+            self.dump(f"Reacting on 'request' on {category}")
             # broadcast current known contents
             await self.broadcast_category(umbrella['category'], origin)
             # broadcast request as well
@@ -320,10 +334,13 @@ class SidecarServer:
         elif action == 'info':
             if not self.check_umbrella(umbrella, True):
                 return
+            self.dump(f"Reacting on 'info' on {category}",
+                      payload=umbrella)
             news = self.hash_by_category[category].update(umbrella['message'])
+            self.dump(f"\n    news={news}")
             if news:
                 # don't allocate a new umbrella object, we don't need this one anymore
-                umbrella['infos'] = news
+                umbrella['message'] = news
                 await self.broadcast(umbrella, origin)
 
     def websockets_closure(self):
