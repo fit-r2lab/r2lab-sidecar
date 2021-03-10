@@ -1,34 +1,42 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>sidecar client</title>
 
-        <script src="http://code.jquery.com/jquery-2.1.4.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/js/bootstrap.js"></script>
-        <script src="sidecar-client.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <title>sidecar client</title>
 
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css">
-        <link type="text/css" rel="stylesheet" href="sidecar-client.css"/>
-    </head>
-    <body>
-        <div class="head-grid">
-           <div id="top-line" style="grid-area:head">
-               <div id="url-label">Sidecar URL:</div>
-               <input id="url"/>
-               <div id="connection-status"></div>
-           </div>
-           <div id="left-buttons" style="grid-area:left-buttons">
-              <button id="connect" onclick="set_url()">Apply/Reconnect</button>
-               <button id="devel" onclick="set_devel_url()">localhost</button>
-               <button id="prod" onclick="set_prod_url()">r2lab</button>
-               <button id="disconnect" onclick="disconnect()">Disconnect</button>
-               <button id="clear" onclick="clear_all()">Clear</button>
-           </div>
-           <div id="separator-controls"></div>
-       </div>
-       <div class="body-grid" id="top-contents">
-       </div>
-    </body>
+  <script src="http://code.jquery.com/jquery-2.1.4.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/js/bootstrap.js"></script>
+  <script src="sidecar-client.js"></script>
+
+  <link rel="stylesheet" type="text/css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css">
+  <link type="text/css" rel="stylesheet" href="sidecar-client.css" />
+</head>
+
+<body>
+  <div class="head-grid">
+    <div id="top-line" style="grid-area:head">
+      <div id="url-label">Sidecar URL:</div>
+      <input id="url" />
+      <div id="connection-status"></div>
+    </div>
+    <div id="left-buttons" style="grid-area:left-buttons">
+      <button id="connect" onclick="set_url()">Apply/Reconnect</button>
+      <button id="devel" onclick="set_devel_url()">
+        <span class="small">connect to<br></span>localhost
+      </button>
+      <button id="prod" onclick="set_prod_url()">
+        <span class="small">connect to<br></span>r2lab
+      </button>
+      <button id="disconnect" onclick="disconnect()">Disconnect</button>
+      <button id="clear" onclick="clear_all()">Clear</button>
+    </div>
+    <div id="separator-controls"></div>
+  </div>
+  <div class="body-grid" id="top-contents">
+  </div>
+</body>
+
 </html>

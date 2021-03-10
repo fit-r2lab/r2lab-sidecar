@@ -335,4 +335,5 @@ $(() => {
     set_url();
     let tooltips = $('[data-toggle="tooltip"]');
     tooltips.tooltip();
+    set_prod_url()
 })
