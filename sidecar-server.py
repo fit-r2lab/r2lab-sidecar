@@ -68,6 +68,8 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import asyncio
 from collections import defaultdict
 
+from urllib.parse import urlparse
+
 import websockets
 
 
@@ -365,9 +367,16 @@ class SidecarServer:
 
 
     async def serve(self, url, cert, key):
-        uri = websockets.uri.parse_uri(url)
+        # websockets.uri deprecated in websockets 9.x
+        # uri = websockets.uri.parse_uri(url)
         # ignore 2 fields resource_name and user_info
-        secure, hostname, port, *_ = uri
+        # secure, hostname, port, *_ = uri
+        parsed = urlparse(url)
+        secure = parsed.scheme != 'ws'
+        try:
+            hostname, port = parsed.netloc.split(':')
+        except:
+            hostname, port = parsed.netloc, 443 if secure else 80
 
         ssl_context = None
         if secure:
