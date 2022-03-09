@@ -391,11 +391,10 @@ class SidecarServer:
 
     def run(self, url, cert, key, period):
         self.dump(f"Sidecar server - mainloop")
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(
-            asyncio.gather(self.serve(url, cert, key),
-                           self.monitor(period)))
-        loop.run_forever()
+        asyncio.run(asyncio.wait([
+            self.serve(url, cert, key),
+            self.monitor(period),
+        ]))
 
     def main(self):
         parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
