@@ -76,7 +76,7 @@ import websockets
 DEFAULT_SIDECAR_URL = "wss://r2lab.inria.fr:999/"
 DEVEL_SIDECAR_URL = "ws://localhost:10000/"
 DEFAULT_SSL_CERT = "/etc/pki/tls/certs/r2lab_inria_fr.crt"
-DEFAULT_SSL_KEY = "/etc/pki/tls/private/r2lab.inria.fr.key"
+DEFAULT_SSL_KEY = "/etc/pki/tls/private/fit+r2lab.key"
 
 DEBUG = False
 
