@@ -242,8 +242,11 @@ class SidecarServer:
             line += f"\n   payload={payload}"
         return line
 
-    def dump(self, message, payload=None):
+    def info_dump(self, message, payload=None):
         logger.info(self._dump(message, payload))
+
+    def warning_dump(self, message, payload=None):
+        logger.warning(self._dump(message, payload))
 
 
     def register(self, websocket):
@@ -253,7 +256,7 @@ class SidecarServer:
         self.clients.add(websocket)
         client_address, *_ = websocket.remote_address
         self.clients_by_host[client_address].add(websocket)
-        self.dump("Registered new client")
+        self.info_dump("Registered new client")
 
     def unregister(self, websocket):
         """
@@ -261,14 +264,20 @@ class SidecarServer:
         """
         if websocket in self.clients:
             self.clients.remove(websocket)
-            client_address, *_ = websocket.remote_address
-            host_set = self.clients_by_host[client_address]
-            host_set.remove(websocket)
-            if not host_set:
-                del self.clients_by_host[client_address]
-            self.dump("Unregistered client")
+            # sometimes websocket.remote_address is None
+            remote = websocket.remote_address
+            if remote:
+                client_address, *_ = websocket.remote_address
+                host_set = self.clients_by_host[client_address]
+                host_set.remove(websocket)
+                # last client from this address ?
+                if not host_set:
+                    del self.clients_by_host[client_address]
+                self.info_dump(f"Unregistered client from {client_address}")
+            else:
+                self.warning_dump("Unregistered client with no address !")
         else:
-            logger.error(f"Unregistering unknown client !")
+            self.warning_dump(f"Failed to unregistering unknown client !")
 
 
     def check_umbrella(self, umbrella, check_infos):
@@ -297,7 +306,7 @@ class SidecarServer:
 
     async def broadcast(self, umbrella, _origin):
         if DEBUG:
-            self.dump(
+            self.info_dump(
                 f"Broadcast {umbrella['category']},{umbrella['action']}",
             payload=umbrella)
         for websocket in self.clients:
@@ -321,7 +330,7 @@ class SidecarServer:
             if not self.check_umbrella(umbrella, False):
                 return
             if DEBUG:
-                self.dump(f"Reacting on 'request' on {category}")
+                self.info_dump(f"Reacting on 'request' on {category}")
             # broadcast current known contents
             await self.broadcast_category(umbrella['category'], origin)
             # broadcast request as well
@@ -332,12 +341,12 @@ class SidecarServer:
             if not self.check_umbrella(umbrella, True):
                 return
             if DEBUG:
-                self.dump(f"Reacting on 'info' on {category}",
+                self.info_dump(f"Reacting on 'info' on {category}",
                           payload=umbrella)
             news = (self.hash_by_category[category]
                     .update_and_find_news(umbrella['message']))
             if DEBUG:
-                self.dump(f"\n    news={news}")
+                self.info_dump(f"\n    news={news}")
             if news:
                 # don't allocate a new umbrella object, we don't need this one anymore
                 umbrella['message'] = news
@@ -362,7 +371,7 @@ class SidecarServer:
 
     async def monitor(self, period):
         while True:
-            self.dump("cyclic status")
+            self.info_dump("cyclic status")
             await asyncio.sleep(period)
 
 
@@ -390,7 +399,7 @@ class SidecarServer:
 
 
     def run(self, url, cert, key, period):
-        self.dump(f"Sidecar server - mainloop")
+        self.info_dump(f"Sidecar server - mainloop")
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
