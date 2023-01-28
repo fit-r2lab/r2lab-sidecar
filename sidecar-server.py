@@ -104,11 +104,7 @@ class Category:
     # when /var/lib is not writable for us
     def _candidate_filenames(self):
         return [
-            # tmp
-            f"/tmp/{self.name}.json",
             f"/var/lib/sidecar/{self.name}.json",
-            f"/var/lib/sidecar/{self.name}.json",
-            f"./{self.name}.json",
         ]
 
     def __repr__(self):
