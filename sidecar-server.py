@@ -206,6 +206,7 @@ class Category:
 CATEGORIES = [
     Category('nodes', persistent=True),
     Category('phones', persistent=True),
+    Category('pdus', persistent=True),
     Category('leases', persistent=False),
 ]
 
