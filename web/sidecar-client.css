@@ -3,17 +3,13 @@
 .head-grid {
   background-color: #eee;
   display: grid;
-  grid-template-columns: 10em 8em 10em 2fr;
+  grid-template-columns: 10em 8em 1fr;
   grid-template-areas:
-    "head head head head"
-    "left-buttons nodes-label nodes-request-button nodes-request-input"
-    "left-buttons nodes-label nodes-info-button nodes-info-input"
-    "left-buttons phones-label phones-request-button phones-request-input"
-    "left-buttons phones-label phones-info-button phones-info-input"
-    "left-buttons leases-label leases-request-button leases-request-input"
-    "left-buttons leases-label leases-info-button leases-info-input"
-    "nodes-contents nodes-contents phones-contents phones-contents"
-    "leases-contents leases-contents leases-contents leases-contents"
+    "head head head"
+    "left-buttons nodes-label nodes-buttons"
+    "left-buttons phones-label phones-buttons"
+    "left-buttons pdus-label pdus-buttons"
+    "left-buttons leases-label leases-buttons"
     ;
   grid-column-gap: 2px;
   grid-row-gap: 2px;
@@ -54,6 +50,9 @@
     font-size: 20px;
     background-color: #ddd;
 }
+.category-buttons {
+    display: flex;
+}
 
 /* actual inputs and buttons area */
 .head-grid>div {
@@ -61,16 +60,6 @@
     text-align: center;
     width: 100%;
 }
-
-/*
-.head-grid>div.contents {
-    border-top: 1px solid #888;
-    font-size: 20px;
-    margin: 5px;
-    text-align: left;
-    padding-top: 8px;
-}
-*/
 
 button {
     padding: 4px;
@@ -94,9 +83,9 @@ input {
 .body-grid {
     background-color: #e0e0e8;
     display: grid;
-    grid-template-columns: 40% 20% 40%;
+    grid-template-columns: 36% 17% 17% 30%;
     grid-template-areas:
-       "nodes-contents phones-contents leases-contents";
+       "nodes-contents phones-contents pdus-contents leases-contents";
     grid-column-gap: 2px;
     grid-row-gap: 2px;
     justify-items: center;
