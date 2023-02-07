@@ -2,6 +2,7 @@
 
 [Unit]
 Description=Sidecar service propagates R2lab testbed status using websockets
+After=network.target
 
 # also available is the option
 #  -u wss://r2lab.inria.fr:999/
@@ -9,7 +10,7 @@ Description=Sidecar service propagates R2lab testbed status using websockets
 [Service]
 WorkingDirectory=/root/r2lab-sidecar
 ExecStartPre=/usr/bin/mkdir -p /var/lib/sidecar
-ExecStart=/bin/bash -c "python3 sidecar-server.py"
+ExecStart=/usr/bin/python sidecar-server.py
 # make it more robust
 Restart=always
 RestartSec=2
