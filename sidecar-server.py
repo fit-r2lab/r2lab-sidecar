@@ -105,6 +105,8 @@ class Category:
     def _candidate_filenames(self):
         return [
             f"/var/lib/sidecar/{self.name}.json",
+            # for the devel server mostly
+            f"{self.name}.json",
         ]
 
     def __repr__(self):
