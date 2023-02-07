@@ -1,5 +1,7 @@
 See also [TODO about r2lab.inria.fr](../r2lab.inria.fr/TODO.md)
 
+**Note** this document is mostly out-of-date
+
 ![Overview](AA-1-statusflow.png)
 
 # faraday
@@ -20,7 +22,7 @@ See also [TODO about r2lab.inria.fr](../r2lab.inria.fr/TODO.md)
 * **has `/root/r2lab` git-updated every 10 minutes**
 * **also runs `make preview publish` every 10 minutes**
 
-* runs `sidecar.js` through `systemd` 
+* runs `sidecar.js` through `systemd`
 * sources in `/root/r2lab/website/sidecar/`
 * this receives changes from all connected parties (in practice, monitor)
   * this contents gets broadcasted to all web clients through `socket.io`
@@ -36,7 +38,7 @@ See also [TODO about r2lab.inria.fr](../r2lab.inria.fr/TODO.md)
 
 * run `animate.py` locally to simulate new random events cyclically
 
-* run `sudo sidecar.js -l` when running locally on a devel box; this will use json files in current directory as opposed to in `/var/lib/sidecar/`; also `sudo` is required to bind to privileged port `999`; 
+* run `sudo sidecar.js -l` when running locally on a devel box; this will use json files in current directory as opposed to in `/var/lib/sidecar/`; also `sudo` is required to bind to privileged port `999`;
 
 * note that you can also use the -u option to use either http or https, or to run on another port number; when running the django server locally you can specify the sidecar URL in `settings.py`; sudo won't be necessary if you run on a port > 1024
 
@@ -44,7 +46,7 @@ See also [TODO about r2lab.inria.fr](../r2lab.inria.fr/TODO.md)
 
 ## JSON files
 
-  * the 2 `json` files are essentially second-order and do not matter at all 
+  * the 2 `json` files are essentially second-order and do not matter at all
   * `complete.json` essentially is a way to store stuff across a restart of the sidecar (which is done every 10 minutes)
   * `news.json` was a first attempt at providing an easy way to post new things, but this is not needed **at all* anymore
 
@@ -54,12 +56,12 @@ See also [TODO about r2lab.inria.fr](../r2lab.inria.fr/TODO.md)
 
 What was flying on the bus was of 2 kinds
 
-### `leases` 
+### `leases`
 
 * on channels `chan-leases` and `chan-leases-request`
-* no change made in this area 
+* no change made in this area
 
-### `status` 
+### `status`
 
 * on channels `chan-status` and `chan-status-request`
 * a (possibly partial) list of records
@@ -70,8 +72,8 @@ What was flying on the bus was of 2 kinds
   * `available` : set manually by other means (nightly)
   * `cmc_on_off`
   * `control_ping`
-  * `control_ssh` 
-  * `os_release`: 
+  * `control_ssh`
+  * `os_release`:
     * string from `/etc/fedora-release /etc/lsb-release`
     * it would end with `-gnuradio-{version}` if present
   * `image_radical` : string from last line of `/etc/rhubarbe-image`
@@ -92,7 +94,7 @@ All channels are renamed as follows for consistency
 |                       | `info:phones` |
 |							| `request:phones` |
 
-### `phones` 
+### `phones`
 
 * on the new channels `chan-phones` and `chan-phones-request`
 * we have a mechanism very close to the `nodes` thingy
@@ -100,7 +102,7 @@ All channels are renamed as follows for consistency
   * `wifi_on_off`: "on" or "off" or "fail"
   * `airplane_mode` : "on" or "off" or "fail"
 
-### `nodes` 
+### `nodes`
 
 #### renamings
   * the `chan-status` channel into `channel:nodes`
@@ -108,7 +110,7 @@ All channels are renamed as follows for consistency
 
 #### more data probed for each node
 
-* **OK** `usrp_on_off` : "on" or "off" or "fail" 
+* **OK** `usrp_on_off` : "on" or "off" or "fail"
   * frequent updates from `monitor`
 * `usrp_type` : "b210" or "x310" or "none"
   * **needs to be filled manually** for starters - a bit like `available`
