@@ -2,7 +2,7 @@
 "use strict"
 
 let devel_url = "ws://localhost:10000/"
-let prod_url = "wss://r2lab.inria.fr:999/"
+let prod_url = "wss://r2lab-sidecar.inria.fr:443/";
 let default_url = devel_url
 
 let websocket = undefined

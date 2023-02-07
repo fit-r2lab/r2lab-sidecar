@@ -5,7 +5,7 @@ Description=Sidecar service propagates R2lab testbed status using websockets
 After=network.target
 
 # also available is the option
-#  -u wss://r2lab.inria.fr:999/
+#  -u wss://r2lab-sidecar.inria.fr:443/
 
 [Service]
 WorkingDirectory=/root/r2lab-sidecar

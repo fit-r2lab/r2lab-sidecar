@@ -30,7 +30,7 @@ NOTES
   URL.
     
 * Ports
-  * default prod. mode is on port 999 (wss://r2lab.inria.fr:999/)
+  * default prod. mode is on port 443 (wss://r2lab-sidecar.inria.fr:443/)
   * default devel mode (with -d/--devel) is on 10000 (ws://localhost:10000)
 
     $ sidecar-server.py --devel
