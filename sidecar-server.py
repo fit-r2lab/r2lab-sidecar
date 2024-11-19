@@ -354,7 +354,7 @@ class SidecarServer:
 
     def websockets_closure(self):
 
-        async def websockets_loop(websocket, _path):
+        async def websockets_loop(websocket):
             self.register(websocket)
             try:
                 async for message in websocket:
