@@ -248,6 +248,17 @@ class SidecarServer:
         logger.warning(self._dump(message, payload))
 
 
+    def _spot(self, websocket):
+        """
+        finds the host for a given websocket
+        we cannot use websocket.remote_address to do this cleanup
+        because it's None when the connection is closed
+        """
+        for host, host_set in self.clients_by_host.items():
+            if websocket in host_set:
+                return host
+        return None
+
     def register(self, websocket):
         """
         keep track of connected clients
@@ -261,22 +272,16 @@ class SidecarServer:
         """
         keep track of connected clients
         """
-        if websocket in self.clients:
-            self.clients.remove(websocket)
-            # sometimes websocket.remote_address is None
-            remote = websocket.remote_address
-            if remote:
-                client_address, *_ = websocket.remote_address
-                host_set = self.clients_by_host[client_address]
-                host_set.remove(websocket)
-                # last client from this address ?
-                if not host_set:
-                    del self.clients_by_host[client_address]
-                self.info_dump(f"Unregistered client from {client_address}")
-            else:
-                self.warning_dump("Unregistered client with no address !")
-        else:
-            self.warning_dump(f"Failed to unregistering unknown client !")
+        host = self._spot(websocket)
+        if not host:
+            self.warning_dump(f"Failed to unregister unknown client {websocket} !")
+        self.info_dump(f"Unregistering client from {host}")
+        self.clients.remove(websocket)
+        host_set = self.clients_by_host[host]
+        host_set.remove(websocket)
+        # last client from this address ?
+        if not host_set:
+            del self.clients_by_host[host]
 
 
     def check_umbrella(self, umbrella, check_infos):
@@ -308,7 +313,8 @@ class SidecarServer:
             self.info_dump(
                 f"Broadcast {umbrella['category']},{umbrella['action']}",
             payload=umbrella)
-        for websocket in self.clients:
+        # avoid: RuntimeError: Set changed size during iteration
+        for websocket in self.clients.copy():
             try:
                 await websocket.send(json.dumps(umbrella))
             except websockets.exceptions.ConnectionClosed:
@@ -352,6 +358,7 @@ class SidecarServer:
                 umbrella['incremental'] = True
                 await self.broadcast(umbrella, origin)
 
+
     def websockets_closure(self):
 
         async def websockets_loop(websocket):
@@ -363,6 +370,8 @@ class SidecarServer:
                         await self.react_on(umbrella, websocket)
                     except json.JSONDecodeError:
                         logger.error(f"Ignoring non-json message {message}")
+            except websockets.exceptions.ConnectionClosedError:
+                logger.error(f"Connection closed with {websocket}")
             finally:
                 self.unregister(websocket)
         return websockets_loop
@@ -399,15 +408,13 @@ class SidecarServer:
 
     def run(self, url, cert, key, period):
         self.info_dump(f"Sidecar server - mainloop")
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        loop.run_until_complete(
-            asyncio.gather(self.serve(url, cert, key),
-                           self.monitor(period)))
-        loop.run_forever()
+        async def both():
+            async with asyncio.TaskGroup() as tg:
+                tg.create_task(self.monitor(period))
+                tg.create_task(self.serve(url, cert, key))
+        with asyncio.Runner() as runner:
+            runner.run(both())
+
 
     def main(self):
         parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
