@@ -451,6 +451,14 @@ class SidecarServer:
             DEBUG = True
             logger.getLogger().setLevel(logger.DEBUG)
 
+        if not args.devel:
+            if not Path(args.cert).exists():
+                logger.error(f"Cannot find cert file {args.cert}")
+                sys.exit(1)
+            if not Path(args.key).exists():
+                logger.error(f"Cannot find key file {args.key}")
+                sys.exit(1)
+
         url = DEVEL_SIDECAR_URL if args.devel else args.sidecar_url
 
         self.run(url, args.cert, args.key, args.period)
