@@ -15,10 +15,13 @@ dependencies = [
 
 
 [tool.setuptools.package_data]
-# xxx systemd/r2lab-sidecar.service -> /usr/systemd/system/r2lab-sidecar.service
 r2lab_sidecar= [
     "web/sidecar-client.*",
 ]
+
+[tool.setuptools.data_files]
+# xxx systemd/r2lab-sidecar.service -> /usr/systemd/system/r2lab-sidecar.service
+'/usr/systemd/system' = ['systemd/r2lab-sidecar.service']
 
 [project.scripts]
 r2lab-sidecar = "r2lab_sidecar.__main__:main"
