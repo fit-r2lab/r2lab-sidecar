@@ -8,11 +8,11 @@ Features:
 
 * the server keeps track of all currently connected clients
 
-* we define categories (currently 3: nodes, phones and leases);
+* we define categories (currently 4: nodes, phones, pdus and leases);
   that describe the current testbed status
 
 *  2 kinds of categories are involved:
-  * id-based (nodes and phones)
+  * id-based (nodes, phones and pdus)
   * and list-based (leases)
 
 * all categories
@@ -73,10 +73,10 @@ from urllib.parse import urlparse
 import websockets
 
 
-DEFAULT_SIDECAR_URL = "wss://prod-r2lab-sidecar.inria.fr:443/"
+DEFAULT_SIDECAR_URL = "wss://r2lab-sidecar.inria.fr:443/"
 DEVEL_SIDECAR_URL = "ws://localhost:10000/"
-DEFAULT_SSL_CERT = "/etc/dsissl/auto/prod-r2lab.inria.fr/fullchain.pem"
-DEFAULT_SSL_KEY = "/etc/dsissl/auto/prod-r2lab.inria.fr/privkey.pem"
+DEFAULT_SSL_CERT = "/etc/dsissl/auto/r2lab.inria.fr/fullchain.pem"
+DEFAULT_SSL_KEY = "/etc/dsissl/auto/r2lab.inria.fr/privkey.pem"
 
 DEBUG = False
 
@@ -432,14 +432,18 @@ class SidecarServer:
             help=f"shorthand for --url {DEVEL_SIDECAR_URL}")
         parser.add_argument(
             "-p", "--period", default=15,
-            help="monitoring period in seconds"
-        )
+            help="monitoring period in seconds")
+        parser.add_argument(
+            "--debug", action='store_true', default=False,
+            help="enable debug mode")
         args = parser.parse_args()
 
-        url = DEVEL_SIDECAR_URL if args.devel else args.sidecar_url
-        if args.devel:
+        if args.debug:
             global DEBUG
             DEBUG = True
+            logger.getLogger().setLevel(logger.DEBUG)
+
+        url = DEVEL_SIDECAR_URL if args.devel else args.sidecar_url
 
         self.run(url, args.cert, args.key, args.period)
 

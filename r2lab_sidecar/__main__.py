@@ -1,4 +1,4 @@
-from r2lab_sidecar import server
+from r2lab_sidecar import SidecarServer
 
-def __main__():
-    server.SidecarServer().main()
+def main():
+    return SidecarServer().main()
