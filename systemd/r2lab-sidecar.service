@@ -4,16 +4,21 @@
 Description=Sidecar service propagates R2lab testbed status using websockets
 After=network.target
 
-# also available is the option
-#  -u wss://r2lab-sidecar.inria.fr:443/
 
 [Service]
-WorkingDirectory=/root/r2lab-sidecar
+# where to store the data
 ExecStartPre=/usr/bin/mkdir -p /var/lib/sidecar
-ExecStart=/usr/bin/python sidecar-server.py
+
+# supported options
+# -u wss://r2lab-sidecar.inria.fr:443/
+# -d /var/lib/sidecar
+# --debug
+ExecStart=r2lab-sidecar
+
 # make it more robust
 Restart=always
 RestartSec=2
+
 
 [Install]
 WantedBy=multi-user.target
