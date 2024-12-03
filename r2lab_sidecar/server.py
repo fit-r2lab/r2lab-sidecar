@@ -72,6 +72,8 @@ from urllib.parse import urlparse
 
 import websockets
 
+from r2lab_sidecar.version import __version__
+
 
 DEFAULT_SIDECAR_URL = "wss://r2lab-sidecar.inria.fr:443/"
 DEVEL_SIDECAR_URL = "ws://localhost:10000/"
@@ -436,7 +438,13 @@ class SidecarServer:
         parser.add_argument(
             "--debug", action='store_true', default=False,
             help="enable debug mode")
+        parser.add_argument(
+            "--version", action='store_true', default=False)
         args = parser.parse_args()
+
+        if args.version:
+            print(f"r2lab-sidecar {__version__}")
+            sys.exit(0)
 
         if args.debug:
             global DEBUG
@@ -446,7 +454,3 @@ class SidecarServer:
         url = DEVEL_SIDECAR_URL if args.devel else args.sidecar_url
 
         self.run(url, args.cert, args.key, args.period)
-
-
-if __name__ == '__main__':
-    SidecarServer().main()
