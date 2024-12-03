@@ -430,13 +430,13 @@ class SidecarServer:
             "-k", "--key", default=DEFAULT_SSL_KEY,
             help="Private key for SSL certificate (wss only)")
         parser.add_argument(
-            "-d", "--devel", action='store_true', default=False,
+            "-D", "--devel", action='store_true', default=False,
             help=f"shorthand for --url {DEVEL_SIDECAR_URL}")
         parser.add_argument(
             "-p", "--period", default=15,
             help="monitoring period in seconds")
         parser.add_argument(
-            "--debug", action='store_true', default=False,
+            "-d", "--debug", action='store_true', default=False,
             help="enable debug mode")
         parser.add_argument(
             "--version", action='store_true', default=False)
