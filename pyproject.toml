@@ -1,6 +1,6 @@
 [project]
 name = "r2lab-sidecar"
-version = "0.9.5"
+version = "0.9.11"
 description = "Testbed Management Companion for R2Lab"
 license = "CC-BY-NC-4.0"
 readme = "README.md"
@@ -14,17 +14,31 @@ dependencies = [
 ]
 
 
-[tool.setuptools.package_data]
-r2lab_sidecar= [
-    "web/sidecar-client.*",
-]
-
-[tool.setuptools.data_files]
-# xxx systemd/r2lab-sidecar.service -> /usr/systemd/system/r2lab-sidecar.service
-'/usr/systemd/system' = ['systemd/r2lab-sidecar.service']
-
 [project.scripts]
 r2lab-sidecar = "r2lab_sidecar.__main__:main"
+
+# ideally we could package
+# - systemd/r2lab-sidecar.service as a systemd service file in /usr/lib/systemd/system
+# - and possibly web/sidecar-client* as data files in the package
+#
+# however as of 2024 dec 4, there seems to be no easy to reproduce
+# the equivalent of setuptools.data_files and setuptools.package_data
+# while using hatch
+# I am seeing rather odd behaviour with using
+# [tool.hatch.build.targets.sdist] and [tool.hatch.build.targets.wheel]
+# with an include clause
+
+# this is too confusing for now, so I am leaving this commented out
+#
+# [tool.setuptools.package-data]
+# r2lab_sidecar = [
+#     "web/sidecar-client.*",
+# ]
+
+# [tool.setuptools]
+# data-files = [
+#     ['/usr/lib/systemd/system', ['systemd/r2lab-sidecar.service']]
+# ]
 
 
 # [project.optional-dependencies]
