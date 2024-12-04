@@ -163,7 +163,7 @@ class Category:
 
     def update_and_find_news(self, infos):
         """
-        triples is a list of triples of the form
+        infos is a list of triples of the form
         {'id': something, 'somekey': 'somevalue', 'anotherkey': 'anotherval'}
 
         returns a list of news that should be broadcasted
@@ -175,6 +175,18 @@ class Category:
             return self.contents
         result = []
         for incoming_info in infos:
+            # DEBUG -- BEG
+            # see also bug in journal circa 3 Déc. circa 23:03
+            # info object lacks id [{'id': 'switch-data', 'on_off': 'on'}]
+            try:
+                assert isinstance(incoming_info, dict)
+            except AssertionError:
+                logger.exception(f"info object is not a dict {incoming_info}")
+                if isinstance(incoming_info, list):
+                    logger.error(f"info object is a list {incoming_info}")
+                    logger.error(f"trying to repair")
+                    incoming_info = incoming_info[0]
+            # DEBUG -- END
             if 'id' not in incoming_info:
                 logger.error(f"info object lacks id {incoming_info}")
                 continue
