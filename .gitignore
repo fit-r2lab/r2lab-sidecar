@@ -2,3 +2,5 @@ ifcfg-*
 foo*
 old*
 websockets-sample
+__pycache__
+dist
