@@ -2,29 +2,23 @@
 
 ## python
 
-Requires python3 and websokets
-
-    pip3 install r2lab-sidecar
+```bash
+pip3 install r2lab-sidecar
+```
 
 ## install systemd service file
 
-    cd /root/r2lab-sidecar
-    rsync -ai systemd/sidecar.service /etc/systemd/system
-    systemctl enable sidecar
+for gory reasons, because we use `pyproject.toml` and `hatch` for packaging,
+the service file is currently not packaged with the package
 
-## run manually
+so get the service file (in `systemd/sidecar.service`) from the git repository
+and install it manually in `/etc/systemd/system`
 
-    systemctl start sidecar
-    journalct --unit=sidecar -f
+then enable and start the service
 
-NOTES
+```bash
 
-* `(hostname ignored)` means that the hostname part in the URL is not
-  used, of course, only the protocol and port numbers matter in the
-  URL.
-
-* Ports
-  * default prod. mode is on port 443 (wss://r2lab-sidecar.inria.fr:443/)
-  * default devel mode (with -d/--devel) is on 10000 (ws://localhost:10000)
-
-    $ r2lab-sidecar --devel
+rsync -ai systemd/sidecar.service root@r2lab.inria.fr:/etc/systemd/system
+ssh root@r2lab.inria.fr
+systemctl enable sidecar
+```
