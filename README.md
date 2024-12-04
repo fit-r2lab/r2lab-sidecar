@@ -7,6 +7,4 @@ connected clients - including the R2lab web interface.
 
 see the `doc/` folder for more information
 
-```{image}doc/AA-1-statusflow.png
-:width: 600px
-```
+![Overview](doc/AA-1-statusflow.png)
