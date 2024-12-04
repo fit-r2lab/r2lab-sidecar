@@ -1,44 +1,57 @@
-See also [TODO about r2lab.inria.fr](../r2lab.inria.fr/TODO.md)
-
-**Note** this document is mostly out-of-date
+# The R2lab infra architecture
 
 ![Overview](AA-1-statusflow.png)
 
-# faraday
+## updates
 
-* **has `/root/r2lab` git-updated every 10 minutes**
+* every piece of code that might be of interest to either the infra (or the nodes, btw) is kept in a git repository `r2lab-embedded`
+* this contains `services/pull-and-restart.sh` and related systemd files (service, timer), which takes care of updating the code on a regular basis
 
-* runs `monitor.py` through `systemd`
-* logs in `/var/log/monitor.log`
-* sources in `/root/r2lab/website/sidecar/`
+## faraday
 
-* this essentially repeatedly pushes full results in `news.json` (see location below)
+runs several services
 
+* in order to retrieve state from the hardware, through dedicated code:
+  * service `monitornodes`
+  * service `monitorphones`
+  * service `monitorpdus`
+  * then each of these 3 services pushes its data to the sidecar server
+* refreshing the leases, by asking the PLCAPI over xmlrpc
+  * service `monitorleases`
+  * this also pushes its data to the sidecar server
+* syncing the current user accounts from the PLCAPI
+  * service `accountsmanager`
+  * this does side effects on `/etc/passwd` and related system files, as well as on users `authorized_keys` files
 
-* **NOTE** *git updates* when a new version of `monitor.py` gets pushed into `github`, ***XXX MISSING*** we should `systemctl restart monitor`
+all this is part of `rhubarbe` which is `pip install`'ed
 
-# r2lab
+## r2lab
 
-* **has `/root/r2lab` git-updated every 10 minutes**
-* **also runs `make preview publish` every 10 minutes**
+runs primarily the folloiwng services
 
-* runs `sidecar.js` through `systemd`
-* sources in `/root/r2lab/website/sidecar/`
-* this receives changes from all connected parties (in practice, monitor)
-  * this contents gets broadcasted to all web clients through `socket.io`
-  * this **does not need** to contain everything; if just one node has changed its `os_release` it is perfectly fine to publish just `[{'id':12, 'os_release':'windows'}]`, and everything else will work as expected
-* it also stores consolidated status for whole platform in `/var/lib/sidecar/complete.json`
-  * essentially $complete = complete + news$
+* `nginx` that does the SSL / https termination (and hands over to sjango using `gunicorn`)
+* `r2lab-django` that serves the web interface
+* `r2lab-sidecar` that runs the websockets server
 
-* **NOTE** *git updates* when a new version of `sidecar.js` gets pushed into `github`, ***XXX MISSING*** we should `systemctl restart sidecar`
+as of end of 2024, this comes from
+
+* `pip install r2lab-sidecar`
+* and the website is cloned in `/root/r2lab.inria.fr` and `/root/r2lab.inria.fr-raw`
 
 # devel notes
+
+===== xxx here ===
+
+* talk about the make targets and the conda envs to run devel code on both faraday and r2lab
+* talk about the sattic web sidecar client
+* talk about r2lab-sidecar as a separate address to be able to use port 443 b/c of common firewall rules on public networks
+
 
 * run `monitor.py 19 22 23` for focusing on a set of nodes only
 
 * run `animate.py` locally to simulate new random events cyclically
 
-* run `sudo sidecar.js -l` when running locally on a devel box; this will use json files in current directory as opposed to in `/var/lib/sidecar/`; also `sudo` is required to bind to privileged port `999`;
+* OUTDATED run `sudo sidecar.js -l` when running locally on a devel box; this will use json files in current directory as opposed to in `/var/lib/sidecar/`; also `sudo` is required to bind to privileged port `999`;
 
 * note that you can also use the -u option to use either http or https, or to run on another port number; when running the django server locally you can specify the sidecar URL in `settings.py`; sudo won't be necessary if you run on a port > 1024
 
