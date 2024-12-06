@@ -376,6 +376,8 @@ class SidecarServer:
     def websockets_closure(self):
 
         async def websockets_loop(websocket):
+            remote_address = websocket.remote_address
+            logger.debug(f"New connection from {remote_address}")
             self.register(websocket)
             try:
                 async for message in websocket:
@@ -388,6 +390,7 @@ class SidecarServer:
                 logger.error(f"Connection closed with {websocket}")
             finally:
                 self.unregister(websocket)
+            logger.debug(f"Done with connection from {remote_address}")
         return websockets_loop
 
 
