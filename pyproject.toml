@@ -2,12 +2,12 @@
 name = "r2lab-sidecar"
 version = "0.10.0"
 description = "Testbed Management Companion for R2Lab"
-license = "CC-BY-NC-4.0"
+license = {text = "CC-BY-NC-4.0"}
 readme = "README.md"
 authors = [
     {name = "Thierry Parmentelat", email = "thierry.parmentelat@inria.fr"},
 ]
-keywords=['R2lab', 'networking', 'testbed', 'wireless']
+keywords = ['R2lab', 'networking', 'testbed', 'wireless']
 requires-python = ">=3.10"
 dependencies = [
     'websockets',
