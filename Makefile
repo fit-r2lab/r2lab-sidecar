@@ -19,7 +19,7 @@ sync:
 	@echo '===== '
 	rsync -ai --relative $$(git ls-files) root@$(DEST):$(TMPDIR)
 	@echo '===== once copied, do the following as root on $(DEST)'
-	@echo 'conda activate r2lab-dev-xxx && pip install -e $(TMPDIR)'
+	@echo 'conda activate r2lab-dev-313 && pip install -e $(TMPDIR)'
 
 r2lab:
 	$(MAKE) sync deployment=production
