@@ -8,7 +8,7 @@ authors = [
     {name = "Thierry Parmentelat", email = "thierry.parmentelat@inria.fr"},
 ]
 keywords = ['R2lab', 'networking', 'testbed', 'wireless']
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
     'websockets',
 ]
