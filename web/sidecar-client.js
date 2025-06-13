@@ -60,7 +60,7 @@ let populate = function() {
         buttons.append(
                 $(`<button>`, {id: `${category}-request`})
                 .html("request update")
-                .addClass(`red`))
+                .addClass(`blue`))
         // set its behaviour
         $(`#${category}-request`).click((e) => send(category, "request"))
 
@@ -71,6 +71,14 @@ let populate = function() {
             .addClass(`green`))
         // set its behaviour
         $(`#${category}-info`).click((e) => send(category, 'info'))
+
+        // create delete button
+        buttons.append(
+            $(`<button>`, {id: `${category}-delete`})
+            .html('delete')
+            .addClass(`red`))
+        // set its behaviour
+        $(`#${category}-delete`).click((e) => send(category, 'delete'))
 
         buttons.append(
             $(`<input />`, {id: `${category}-input`})

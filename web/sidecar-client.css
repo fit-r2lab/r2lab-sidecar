@@ -73,6 +73,9 @@ button {
 .green {
     background-color: Teal;
 }
+.blue {
+    background-color: DodgerBlue;
+}
 input {
     width: 100%;
     font-size: 18px;
