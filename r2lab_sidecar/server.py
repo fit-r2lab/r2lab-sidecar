@@ -81,6 +81,7 @@ DEFAULT_SSL_CERT = "/etc/dsissl/auto/prod-r2lab.inria.fr/fullchain.pem"
 DEFAULT_SSL_KEY = "/etc/dsissl/auto/prod-r2lab.inria.fr/privkey.pem"
 
 DEBUG = False
+# DEBUG = True
 
 logger.basicConfig(
     stream=sys.stdout,
@@ -214,6 +215,31 @@ class Category:
             self.store()
         return result
 
+    def delete_from_infos(self, infos):
+        """
+        infos is a list of records that have and `id` key
+        and this method deleted these ids from the current contents
+        """
+        before = len(self.contents)
+        changed = False
+        for info in infos:
+            if 'id' not in info:
+                logger.error(f"category {self.name}, deleting: info object lacks id {info}")
+                continue
+            id = info['id']
+            for content in self.contents[:]:
+                if content.get('id') == id:
+                    self.contents.remove(content)
+                    changed = True
+                    break
+            else:
+                logger.error(f"category {self.name}, deleting: no such id {id} in contents")
+        if changed:
+            self.rehash()
+        after = len(self.contents)
+        logger.debug(f"category {self.name}, deleted {before - after} infos, {changed=}")
+        return changed
+
 
 CATEGORIES = [
     Category('nodes', persistent=True),
@@ -303,7 +329,7 @@ class SidecarServer:
         Check payload once it's been json-unmarshalled
         """
         if ('action' not in umbrella or
-                umbrella['action'] not in ('request', 'info')):
+                umbrella['action'] not in ('request', 'info', 'delete')):
             logger.error(f"Ignoring misformed umbrella {umbrella}")
             return False
         if ('category' not in umbrella or
@@ -371,6 +397,15 @@ class SidecarServer:
                 umbrella['message'] = news
                 umbrella['incremental'] = True
                 await self.broadcast(umbrella, origin)
+        elif action == 'delete':
+            if not self.check_umbrella(umbrella, False):
+                return
+            # if DEBUG:
+            #     self.info_dump(f"Reacting on 'delete' on {category}")
+            self.info_dump(f"Reacting on 'delete' on {category}")
+            news = (self.hash_by_category[category]
+                    .delete_from_infos(umbrella['message']))
+            # xxx don't broadcast this event; people will have to reload their pages
 
 
     def websockets_closure(self):
