@@ -458,7 +458,7 @@ class SidecarServer:
             hostname, port, ssl=ssl_context)
 
 
-    def run(self, url, cert, key, period):
+    def run(self, url, cert, key, period, api_url=None, poll_period=None):
         self.info_dump(f"Sidecar server - mainloop")
         async def both():
             async with asyncio.TaskGroup() as tg:
@@ -486,6 +486,13 @@ class SidecarServer:
             "-p", "--period", default=15,
             help="monitoring period in seconds")
         parser.add_argument(
+            "-a", "--r2lab-api-url", default=None,
+            help="URL of r2lab-api to poll for leases"
+                 " (e.g. http://localhost:8000)")
+        parser.add_argument(
+            "--poll-period", default=10, type=int,
+            help="polling period for r2lab-api in seconds")
+        parser.add_argument(
             "-d", "--debug", action='store_true', default=False,
             help="enable debug mode")
         parser.add_argument(
@@ -511,4 +518,6 @@ class SidecarServer:
 
         url = DEVEL_SIDECAR_URL if args.devel else args.sidecar_url
 
-        self.run(url, args.cert, args.key, args.period)
+        self.run(url, args.cert, args.key, args.period,
+                 api_url=args.r2lab_api_url,
+                 poll_period=args.poll_period)
