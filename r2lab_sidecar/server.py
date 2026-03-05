@@ -67,8 +67,11 @@ import logging as logger
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import asyncio
 from collections import defaultdict
+from datetime import date, datetime, timezone
 
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
+
+from urllib.request import urlopen
 
 import websockets
 
@@ -259,6 +262,7 @@ class SidecarServer:
                                  for category in CATEGORIES}
         for category in self.hash_by_category.values():
             category.load()
+        self.api_url = None
         self.clients = set()
         # this is not operational, just for more meaningful
         # accounting of number of clients per hostname
@@ -376,6 +380,9 @@ class SidecarServer:
                 return
             if DEBUG:
                 self.info_dump(f"Reacting on 'request' on {category}")
+            # refresh leases from the API before broadcasting
+            if category == 'leases':
+                await self.fetch_leases()
             # broadcast current known contents
             await self.broadcast_category(umbrella['category'], origin)
             # broadcast request as well
@@ -429,6 +436,38 @@ class SidecarServer:
         return websockets_loop
 
 
+    async def fetch_leases(self):
+        """
+        Fetch leases from r2lab-api and update the leases category.
+        Returns True on success, False on failure.
+        """
+        if not self.api_url:
+            return False
+        try:
+            today_midnight = datetime.combine(
+                date.today(), datetime.min.time()).isoformat()
+            leases_url = (f"{self.api_url}/leases?"
+                          + urlencode({"after": today_midnight}))
+            response = await asyncio.to_thread(
+                lambda: urlopen(leases_url).read())
+            leases = json.loads(response)
+            self.hash_by_category['leases'].contents = leases
+            logger.info(f"Polled {len(leases)} leases from {leases_url}")
+            return True
+        except Exception as exc:
+            logger.error(f"Failed to poll leases: {exc}")
+            return False
+
+    async def poll_leases(self, period):
+        """
+        Periodically fetch leases from r2lab-api and broadcast to clients
+        """
+        while True:
+            if await self.fetch_leases():
+                await self.broadcast_category('leases', None)
+            await asyncio.sleep(period)
+
+
     async def monitor(self, period):
         while True:
             self.info_dump("cyclic status")
@@ -459,13 +498,17 @@ class SidecarServer:
 
 
     def run(self, url, cert, key, period, api_url=None, poll_period=None):
+        self.api_url = api_url
         self.info_dump(f"Sidecar server - mainloop")
-        async def both():
+        async def all_tasks():
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(self.monitor(period))
                 tg.create_task(self.serve(url, cert, key))
+                if api_url:
+                    tg.create_task(
+                        self.poll_leases(poll_period or period))
         with asyncio.Runner() as runner:
-            runner.run(both())
+            runner.run(all_tasks())
 
 
     def main(self):
