@@ -245,13 +245,13 @@ function prettyDate() {
 
 // a function to prettify the leases message
 function pretty_leases(records) {
-    records.sort((r1, r2) => r1.valid_from.localeCompare(r2.valid_from))
+    records.sort((r1, r2) => r1.t_from.localeCompare(r2.t_from))
     let bullets = $(`<div>`).addClass('records')
     console.log(records)
     records.forEach(function(lease) {
         try {
-            let [datef, timef] = lease.valid_from.split("T")
-            let [dateu, timeu] = lease.valid_until.split("T")
+            let [datef, timef] = lease.t_from.split("T")
+            let [dateu, timeu] = lease.t_until.split("T")
             let inside = $(`<ul>`)
                 .append($("<li>").html(`From ${datef}`))
                 .append($("<li>").html(`at ${timef}`))
@@ -261,7 +261,7 @@ function pretty_leases(records) {
             bullets.append(
                 $(`<span>`)
                 .addClass('record')
-                .html(lease.slicename)
+                .html(lease.slice_name)
                 .tooltip({title: inside, html: true}))
         } catch (e) {
             bullets.append(
