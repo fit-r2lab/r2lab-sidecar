@@ -80,6 +80,8 @@ from r2lab_sidecar.version import __version__
 
 DEFAULT_SIDECAR_URL = "wss://r2lab-sidecar.inria.fr:443/"
 DEVEL_SIDECAR_URL = "ws://localhost:10000/"
+DEFAULT_R2LAB_API_URL = "https://r2labapi.inria.fr:443"
+DEVEL_R2LAB_API_URL = "http://localhost:9999"
 DEFAULT_SSL_CERT = "/etc/dsissl/auto/prod-r2lab.inria.fr/fullchain.pem"
 DEFAULT_SSL_KEY = "/etc/dsissl/auto/prod-r2lab.inria.fr/privkey.pem"
 
@@ -515,7 +517,13 @@ class SidecarServer:
         parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
         parser.add_argument(
             "-u", "--sidecar-url", default=DEFAULT_SIDECAR_URL,
-            help="Typically a ws:// or wss:// url")
+            help="the URL where this sidecar server will be listening for clients")
+        parser.add_argument(
+            "-a", "--r2lab-api-url", default=DEFAULT_R2LAB_API_URL,
+            help="URL of r2lab-api, to poll for leases")
+        parser.add_argument(
+            "-D", "--devel", action='store_true', default=False,
+            help=f"shorthand for --url {DEVEL_SIDECAR_URL} --r2lab-api-url {DEVEL_R2LAB_API_URL}")
         parser.add_argument(
             "-c", "--cert", default=DEFAULT_SSL_CERT,
             help="SSL certificate (wss only)")
@@ -523,15 +531,8 @@ class SidecarServer:
             "-k", "--key", default=DEFAULT_SSL_KEY,
             help="Private key for SSL certificate (wss only)")
         parser.add_argument(
-            "-D", "--devel", action='store_true', default=False,
-            help=f"shorthand for --url {DEVEL_SIDECAR_URL}")
-        parser.add_argument(
             "-p", "--period", default=15,
             help="monitoring period in seconds")
-        parser.add_argument(
-            "-a", "--r2lab-api-url", default=None,
-            help="URL of r2lab-api to poll for leases"
-                 " (e.g. http://localhost:8000)")
         parser.add_argument(
             "--poll-period", default=10, type=int,
             help="polling period for r2lab-api in seconds")
@@ -560,7 +561,12 @@ class SidecarServer:
                 sys.exit(1)
 
         url = DEVEL_SIDECAR_URL if args.devel else args.sidecar_url
+        r2lab_api_url = DEVEL_R2LAB_API_URL if args.devel else args.r2lab_api_url
+
+        logger.info(f"Starting sidecar server with")
+        logger.info(f"  sidecar_url={url}")
+        logger.info(f"  r2lab_api_url={r2lab_api_url}")
 
         self.run(url, args.cert, args.key, args.period,
-                 api_url=args.r2lab_api_url,
+                 api_url=r2lab_api_url,
                  poll_period=args.poll_period)
