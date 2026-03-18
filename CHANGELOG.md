@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.0 - 2026-03-18
+
+* adapted to using r2lab-api instead of plcapi, which is now deprecated
+
 ## 0.11.0 - 2025-06-13
 
 * support for deleting entries in the database, both in server and web client
