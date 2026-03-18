@@ -1,6 +1,6 @@
 [project]
 name = "r2lab-sidecar"
-version = "0.12.0"
+version = "0.12.1"
 description = "Testbed Management Companion for R2Lab"
 license = {text = "CC-BY-NC-4.0"}
 readme = "README.md"
@@ -10,7 +10,7 @@ authors = [
 keywords = ['R2lab', 'networking', 'testbed', 'wireless']
 requires-python = ">=3.13"
 dependencies = [
-    "pip>=26.0.1",
+    "pip>=0.12.1",
     "websockets",
 ]
 
