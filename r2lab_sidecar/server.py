@@ -67,9 +67,7 @@ import logging as logger
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import asyncio
 from collections import defaultdict
-from datetime import date, datetime, timezone
-
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse
 
 from urllib.request import urlopen
 
@@ -446,10 +444,7 @@ class SidecarServer:
         if not self.api_url:
             return False
         try:
-            today_midnight = datetime.combine(
-                date.today(), datetime.min.time()).isoformat()
-            leases_url = (f"{self.api_url}/leases?"
-                          + urlencode({"after": today_midnight}))
+            leases_url = f"{self.api_url}/leases?after=today"
             response = await asyncio.to_thread(
                 lambda: urlopen(leases_url).read())
             leases = json.loads(response)
