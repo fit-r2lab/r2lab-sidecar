@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.2 - 2026-04-15
+
+* use /leases?after=today instead of computing it ourselves
+
 ## 0.12.1 - 2026-03-18
 
 * adapted to using r2lab-api instead of plcapi, which is now deprecated
