@@ -19,6 +19,5 @@ then enable and start the service
 ```bash
 
 rsync -ai systemd/sidecar.service root@r2lab.inria.fr:/etc/systemd/system
-ssh root@r2lab.inria.fr
-systemctl enable sidecar
+ssh root@r2lab.inria.fr systemctl enable sidecar
 ```
