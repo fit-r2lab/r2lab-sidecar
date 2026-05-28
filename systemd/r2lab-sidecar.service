@@ -6,13 +6,16 @@ After=network.target
 
 
 [Service]
+WorkingDirectory=/root/r2lab-sidecar
+
 # where to store the data
 ExecStartPre=/usr/bin/mkdir -p /var/lib/sidecar
+ExecStartPre=/root/.local/bin/uv sync --frozen
 
 # supported options
 # -u wss://r2lab-sidecar.inria.fr:443/
 # --debug
-ExecStart=r2lab-sidecar
+ExecStart=/root/.local/bin/uv run r2lab-sidecar
 
 # make it more robust
 Restart=always
