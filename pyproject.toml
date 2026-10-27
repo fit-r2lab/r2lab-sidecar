@@ -19,7 +19,7 @@ dependencies = [
 r2lab-sidecar = "r2lab_sidecar.__main__:main"
 
 # ideally we could package
-# - systemd/r2lab-sidecar.service as a systemd service file in /usr/lib/systemd/system
+# - deploy/r2lab-sidecar.service as a systemd service file in /usr/lib/systemd/system
 # - and possibly web/sidecar-client* as data files in the package
 #
 # however as of 2024 dec 4, there seems to be no easy to reproduce
@@ -38,7 +38,7 @@ r2lab-sidecar = "r2lab_sidecar.__main__:main"
 
 # [tool.setuptools]
 # data-files = [
-#     ['/usr/lib/systemd/system', ['systemd/r2lab-sidecar.service']]
+#     ['/usr/lib/systemd/system', ['deploy/r2lab-sidecar.service']]
 # ]
 
 
