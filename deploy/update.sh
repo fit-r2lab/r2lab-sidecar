@@ -12,7 +12,7 @@ set -euo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")/.."
 
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="/root/.local/bin:$PATH"
 
 uv sync --frozen
 systemctl daemon-reload
