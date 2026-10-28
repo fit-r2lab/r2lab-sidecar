@@ -5,7 +5,9 @@
 ## updates
 
 * every piece of code that might be of interest to either the infra (or the nodes, btw) is kept in a git repository `r2lab-embedded`
-* this contains `services/pull-and-restart.sh` and related systemd unit files (service, timer), which takes care of updating the code on a regular basis
+* this contains `services/run-updates.sh` and related systemd unit files (service, timer), that run hourly on faraday, r2lab and r2labapi (and on distrait, for `r2lab-embedded` only)
+* for each git repo listed for the host in `services/hosts/`, it follows the upstream branch, and when that has changed it runs the repo's own `deploy/update.sh`, which builds and restarts what needs to be
+* each of these repos also keeps its systemd unit files in its `deploy/` folder, installed with `systemctl link`
 
 ## faraday
 
@@ -20,7 +22,8 @@ runs several services
   * service `accountsmanager`
   * this does side effects on `/etc/passwd` and related system files, as well as on users `authorized_keys` files
 
-all this is part of `rhubarbe` which is `pip install`'ed
+all this is part of `rhubarbe`; the services run from the git repo cloned in `/opt/rhubarbe`, with its own uv environment, that is updated by the above;
+regular users on faraday still use the `pip install`'ed version, that is upgraded by hand
 
 ## r2lab
 
@@ -30,10 +33,10 @@ runs primarily the folloiwng services
 * `r2lab-django` that serves the web interface
 * `r2lab-sidecar` that runs the websockets server
 
-as of end of 2024, this comes from
+all this is cloned from git, and updated hourly as described above
 
-* `pip install r2lab-sidecar`
-* and the website is cloned in `/root/r2lab.inria.fr` and `/root/r2lab.inria.fr-raw`
+* the sidecar is in `/root/r2lab-sidecar`, and runs in its own uv environment
+* the website is in `/root/r2lab.inria.fr` and `/root/r2lab.inria.fr-raw`, and is published in `/var/www/r2lab.inria.fr`
 
 ## sidecar client
 
