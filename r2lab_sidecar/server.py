@@ -66,6 +66,7 @@ from pathlib import Path
 import logging as logger
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import asyncio
+import signal
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -489,21 +490,46 @@ class SidecarServer:
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ssl_context.load_cert_chain(cert, key)
 
-        await websockets.serve(
+        return await websockets.serve(
             self.websockets_closure(),
             hostname, port, ssl=ssl_context)
+
+    async def shutdown(self, server, timeout=5):
+        """
+        stop accepting connections, and close all clients with a 1001,
+        waiting at most timeout seconds for the closing handshakes
+        """
+        self.info_dump("Shutting down")
+        server.close(close_connections=False)
+        if self.clients:
+            await asyncio.wait(
+                [asyncio.create_task(client.close(1001, "server shutting down"))
+                 for client in self.clients],
+                timeout=timeout)
+        # clients that did not answer the closing handshake in time
+        for client in list(self.clients):
+            client.transport.abort()
+        await server.wait_closed()
 
 
     def run(self, url, cert, key, period, api_url=None, poll_period=None):
         self.api_url = api_url
         self.info_dump(f"Sidecar server - mainloop")
         async def all_tasks():
+            stop = asyncio.Event()
+            loop = asyncio.get_running_loop()
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(sig, stop.set)
             async with asyncio.TaskGroup() as tg:
-                tg.create_task(self.monitor(period))
-                tg.create_task(self.serve(url, cert, key))
+                tasks = [tg.create_task(self.monitor(period))]
                 if api_url:
-                    tg.create_task(
-                        self.poll_leases(poll_period or period))
+                    tasks.append(tg.create_task(
+                        self.poll_leases(poll_period or period)))
+                server = await self.serve(url, cert, key)
+                await stop.wait()
+                await self.shutdown(server)
+                for task in tasks:
+                    task.cancel()
         with asyncio.Runner() as runner:
             runner.run(all_tasks())
 
