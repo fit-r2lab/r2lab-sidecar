@@ -240,6 +240,8 @@ class Category:
                 logger.error(f"category {self.name}, deleting: no such id {id} in contents")
         if changed:
             self.rehash()
+            if self.persistent:
+                self.store()
         after = len(self.contents)
         logger.debug(f"category {self.name}, deleted {before - after} infos, {changed=}")
         return changed
