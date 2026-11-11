@@ -53,6 +53,21 @@
 .category-buttons {
     display: flex;
 }
+/* the request button is the main one: let it take most of the room */
+.category-buttons>button[id$="-request"] {
+    flex: 4 1 auto;
+}
+/* send / delete are of little use now that the data is transient */
+.category-buttons>button[id$="-info"],
+.category-buttons>button[id$="-delete"] {
+    opacity: 0.5;
+}
+.category-buttons>input {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 6em;
+    opacity: 0.5;
+}
 
 /* actual inputs and buttons area */
 .head-grid>div {

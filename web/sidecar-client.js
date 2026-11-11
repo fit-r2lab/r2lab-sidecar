@@ -10,7 +10,7 @@ let websocket = undefined
 ////////////////////
 let categories = {
     nodes : {depth: 10, def_request: '"PLEASE"',
-             def_info: '[{"id":1, "available":"ko"}]',
+             def_info: '[{"id":1, "control_ping":"off"}]',
              prettifier: pretty_records,
             },
     phones: {depth: 5,  def_request: '"PLEASE"',
@@ -285,7 +285,7 @@ function pretty_records(records) {
         for (let attribute of Object.keys(record).sort())
             inside.append($(`<li>`).html(`"${attribute}" : ${JSON.stringify(record[attribute])}`))
         let color_class =
-            ((record['available'] == 'ko')
+            ((record.availability?.status == 'ko')
              || (record['airplane_mode'] == 'fail')) ? "red" : ""
         bullets.append(
             $(`<span>`)
