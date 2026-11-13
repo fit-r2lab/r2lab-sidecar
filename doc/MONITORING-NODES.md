@@ -133,4 +133,4 @@ means that it can, and says which OS.
   `r2lab-python/r2lab/sidecar_payload.py` (`SUPPORTED`, informational)
 * `rhubarbe/monitor/prometheus.py` exports `cmc_on_off`, `usrp_on_off`, `control_ssh` and `control_ping`
 * where to change what, for the sources of truth (`static`, `availability`): see
-  `r2lab-misc/inventory/AA-where-to-change-what.excalidraw.svg`
+  `r2lab-inventory/AA-where-to-change-what.excalidraw.svg`
